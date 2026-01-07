@@ -116,7 +116,7 @@ footer {
 const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 
 /* ===============================
@@ -131,7 +131,7 @@ document.getElementById("contador").innerText = visitas;
    MOSTRAR VIAJES
 ================================ */
 async function mostrarViajes() {
-  const { data, error } = await supabase
+  const { data, error } = await sb
     .from("viajes")
     .select("*")
     .order("created_at", { ascending: false });
@@ -175,7 +175,7 @@ async function publicarViaje() {
     return;
   }
 
-  const { error } = await supabase
+  const { error } = await sb
     .from("viajes")
     .insert([
       { origen, destino, hora, telefono }
