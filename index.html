@@ -1,102 +1,147 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ComVi – Compartiendo Viajes</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ComVi – Carpooling</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #fafafa;
+}
+header {
+  background: #0d6efd;
+  color: white;
+  padding: 12px;
+  text-align: center;
+}
+section {
+  padding: 12px;
+}
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+button {
+  background: #0d6efd;
+  color: white;
+  border: none;
+}
+.viaje {
+  background: white;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  box-shadow: 0 0 4px rgba(0,0,0,0.1);
+}
+.ad {
+  background: #f0f0f0;
+  padding: 10px;
+  margin: 10px;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 14px;
+}
+footer {
+  font-size: 12px;
+  text-align: center;
+  color: #666;
+  padding: 10px;
+}
+</style>
 </head>
 
-<body class="bg-gray-100 text-gray-800">
+<body>
 
-<!-- HEADER -->
-<header class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center">
-  <h1 class="text-xl font-bold flex items-center gap-2">
-    <i class="fas fa-car"></i> ComVi
-  </h1>
-  <a href="#publicar" class="bg-white text-purple-700 px-3 py-1 rounded-full text-sm font-semibold">
-    Publicar
-  </a>
+<header>
+  <h2>🚗 ComVi</h2>
+  <div>Carpooling comunitario</div>
 </header>
 
+<!-- PUBLICIDAD SUPERIOR -->
+<div class="ad">
+  <strong>Publicidad</strong><br>
+  Servicio técnico · WhatsApp 11 5802-5832
+</div>
+
+<section>
+  <h3>📍 Publicar viaje</h3>
+  <input id="origen" placeholder="Origen" />
+  <input id="destino" placeholder="Destino" />
+  <input id="hora" placeholder="Horario aproximado" />
+  <button onclick="publicarViaje()">Publicar viaje</button>
+</section>
+
 <!-- DONACIÓN -->
-<section class="bg-yellow-100 text-center p-3 text-sm">
-  💛 ¿Te sirve ComVi?
-  <a href="https://cafecito.app/" target="_blank" class="font-bold underline">
-    Apoyá el proyecto
+<section>
+  <a href="https://link.mercadopago.com.ar/donacomvi"
+     target="_blank"
+     style="display:block;padding:12px;background:#009ee3;color:white;
+            text-align:center;border-radius:8px;">
+    ❤️ Donar para sostener ComVi
   </a>
 </section>
 
-<!-- PUBLICIDADES -->
-<section class="p-4">
-  <h2 class="font-bold mb-2">🔸 Publicidades destacadas</h2>
+<!-- PUBLICIDAD MEDIA -->
+<div class="ad">
+  ¿Querés anunciar acá?<br>
+  📧 <a href="mailto:admcomvi@gmail.com">admcomvi@gmail.com</a>
+</div>
 
-  <div class="bg-white rounded-lg p-3 mb-3 border-l-4 border-yellow-400">
-    ⛽ <strong>Estación Ruta 7</strong><br>
-    10% OFF en combustible mostrando ComVi
-  </div>
-
-  <div class="bg-white rounded-lg p-3 mb-3 border-l-4 border-yellow-400">
-    🍽️ <strong>Parador El Viajero</strong><br>
-    Menú conductor con descuento
-  </div>
+<section>
+  <h3>🗺️ Viajes disponibles</h3>
+  <div id="listaViajes"></div>
 </section>
 
-<!-- VIAJES -->
-<section class="p-4">
-  <h2 class="font-bold mb-3">🚗 Viajes disponibles</h2>
-
-  <div class="bg-white rounded-xl p-4 mb-4 shadow">
-    <div class="font-bold">Buenos Aires → Córdoba</div>
-    <div class="text-sm text-gray-600">15/01 – 08:00 · 3 plazas</div>
-    <div class="flex justify-between items-center mt-2">
-      <span class="font-bold">$8.000</span>
-      <a href="https://wa.me/5491112345678" target="_blank"
-         class="bg-green-500 text-white px-3 py-1 rounded flex items-center gap-1">
-        <i class="fab fa-whatsapp"></i> Contactar
-      </a>
-    </div>
-  </div>
-
-  <div class="bg-white rounded-xl p-4 mb-4 shadow">
-    <div class="font-bold">Rosario → Mendoza</div>
-    <div class="text-sm text-gray-600">20/01 – 14:30 · 2 plazas</div>
-    <div class="flex justify-between items-center mt-2">
-      <span class="font-bold">$12.000</span>
-      <a href="https://wa.me/5491187654321" target="_blank"
-         class="bg-green-500 text-white px-3 py-1 rounded flex items-center gap-1">
-        <i class="fab fa-whatsapp"></i> Contactar
-      </a>
-    </div>
-  </div>
-</section>
-
-<!-- PUBLICAR VIAJE -->
-<section id="publicar" class="p-4 bg-white">
-  <h2 class="font-bold mb-3">➕ Publicar viaje</h2>
-
-  <form onsubmit="event.preventDefault(); alert('Viaje publicado. Te contactarán por WhatsApp'); this.reset();"
-        class="space-y-3">
-
-    <input required placeholder="Origen" class="w-full p-2 border rounded">
-    <input required placeholder="Destino" class="w-full p-2 border rounded">
-    <input type="date" required class="w-full p-2 border rounded">
-    <input type="time" required class="w-full p-2 border rounded">
-    <input type="number" required placeholder="Plazas disponibles" class="w-full p-2 border rounded">
-    <input type="number" required placeholder="Precio por persona" class="w-full p-2 border rounded">
-    <input required placeholder="Tu WhatsApp" class="w-full p-2 border rounded">
-
-    <button class="w-full bg-indigo-600 text-white p-2 rounded font-bold">
-      Publicar viaje
-    </button>
-  </form>
-</section>
-
-<!-- FOOTER -->
-<footer class="text-center text-sm text-gray-500 p-4">
-  © 2026 ComVi · Compartiendo viajes
+<footer>
+  Visitas: <span id="contador"></span><br>
+  MVP comunitario · Argentina
 </footer>
+
+<script>
+// CONTADOR
+let visitas = localStorage.getItem("visitas_comvi") || 0;
+visitas++;
+localStorage.setItem("visitas_comvi", visitas);
+document.getElementById("contador").innerText = visitas;
+
+// VIAJES (MVP LOCAL)
+let viajes = JSON.parse(localStorage.getItem("viajes_comvi") || "[]");
+
+function mostrarViajes() {
+  const contenedor = document.getElementById("listaViajes");
+  contenedor.innerHTML = "";
+  viajes.forEach(v => {
+    const div = document.createElement("div");
+    div.className = "viaje";
+    div.innerHTML = `<strong>${v.origen} ➜ ${v.destino}</strong><br>⏰ ${v.hora}`;
+    contenedor.appendChild(div);
+  });
+}
+
+function publicarViaje() {
+  const origen = document.getElementById("origen").value;
+  const destino = document.getElementById("destino").value;
+  const hora = document.getElementById("hora").value;
+
+  if (!origen || !destino || !hora) {
+    alert("Completá todos los campos");
+    return;
+  }
+
+  viajes.push({ origen, destino, hora });
+  localStorage.setItem("viajes_comvi", JSON.stringify(viajes));
+  alert("Viaje publicado");
+  location.reload();
+}
+
+mostrarViajes();
+</script>
 
 </body>
 </html>
