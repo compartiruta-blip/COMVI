@@ -103,45 +103,87 @@ footer {
   MVP comunitario · Argentina
 </footer>
 
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
 <script>
-// CONTADOR
+/* ===============================
+   CONFIG SUPABASE
+================================ */
+const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ===============================
+   CONTADOR LOCAL (MVP)
+================================ */
 let visitas = localStorage.getItem("visitas_comvi") || 0;
 visitas++;
 localStorage.setItem("visitas_comvi", visitas);
 document.getElementById("contador").innerText = visitas;
 
-// VIAJES (MVP LOCAL)
-let viajes = JSON.parse(localStorage.getItem("viajes_comvi") || "[]");
+/* ===============================
+   MOSTRAR VIAJES
+================================ */
+async function mostrarViajes() {
+  const { data, error } = await supabase
+    .from("viajes")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-function mostrarViajes() {
+  if (error) {
+    alert("Error cargando viajes");
+    return;
+  }
+
   const contenedor = document.getElementById("listaViajes");
   contenedor.innerHTML = "";
-  viajes.forEach(v => {
+
+  data.forEach(v => {
     const div = document.createElement("div");
     div.className = "viaje";
-    div.innerHTML = `<strong>${v.origen} ➜ ${v.destino}</strong><br>⏰ ${v.hora}`;
+    div.innerHTML = `
+      <strong>${v.origen} → ${v.destino}</strong><br>
+      🕒 ${v.hora}<br>
+      📞 <a href="tel:${v.telefono}">${v.telefono}</a>
+    `;
     contenedor.appendChild(div);
   });
 }
 
-function publicarViaje() {
+/* ===============================
+   PUBLICAR VIAJE
+================================ */
+async function publicarViaje() {
   const origen = document.getElementById("origen").value;
   const destino = document.getElementById("destino").value;
   const hora = document.getElementById("hora").value;
+  const telefono = document.getElementById("telefono").value;
 
-  if (!origen || !destino || !hora) {
+  if (!origen || !destino || !hora || !telefono) {
     alert("Completá todos los campos");
     return;
   }
 
-  viajes.push({ origen, destino, hora });
-  localStorage.setItem("viajes_comvi", JSON.stringify(viajes));
+  const { error } = await supabase.from("viajes").insert([
+    { origen, destino, hora, telefono }
+  ]);
+
+  if (error) {
+    alert("Error al publicar");
+    return;
+  }
+
   alert("Viaje publicado");
-  location.reload();
+  mostrarViajes();
 }
 
+/* ===============================
+   INIT
+================================ */
 mostrarViajes();
 </script>
+
 
 </body>
 </html>
