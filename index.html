@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComVi – Compartiendo Viajes</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="bg-gray-100 text-gray-800">
+
+<!-- HEADER -->
+<header class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center">
+  <h1 class="text-xl font-bold flex items-center gap-2">
+    <i class="fas fa-car"></i> ComVi
+  </h1>
+  <a href="#publicar" class="bg-white text-purple-700 px-3 py-1 rounded-full text-sm font-semibold">
+    Publicar
+  </a>
+</header>
+
+<!-- DONACIÓN -->
+<section class="bg-yellow-100 text-center p-3 text-sm">
+  💛 ¿Te sirve ComVi?
+  <a href="https://cafecito.app/" target="_blank" class="font-bold underline">
+    Apoyá el proyecto
+  </a>
+</section>
+
+<!-- PUBLICIDADES -->
+<section class="p-4">
+  <h2 class="font-bold mb-2">🔸 Publicidades destacadas</h2>
+
+  <div class="bg-white rounded-lg p-3 mb-3 border-l-4 border-yellow-400">
+    ⛽ <strong>Estación Ruta 7</strong><br>
+    10% OFF en combustible mostrando ComVi
+  </div>
+
+  <div class="bg-white rounded-lg p-3 mb-3 border-l-4 border-yellow-400">
+    🍽️ <strong>Parador El Viajero</strong><br>
+    Menú conductor con descuento
+  </div>
+</section>
+
+<!-- VIAJES -->
+<section class="p-4">
+  <h2 class="font-bold mb-3">🚗 Viajes disponibles</h2>
+
+  <div class="bg-white rounded-xl p-4 mb-4 shadow">
+    <div class="font-bold">Buenos Aires → Córdoba</div>
+    <div class="text-sm text-gray-600">15/01 – 08:00 · 3 plazas</div>
+    <div class="flex justify-between items-center mt-2">
+      <span class="font-bold">$8.000</span>
+      <a href="https://wa.me/5491112345678" target="_blank"
+         class="bg-green-500 text-white px-3 py-1 rounded flex items-center gap-1">
+        <i class="fab fa-whatsapp"></i> Contactar
+      </a>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl p-4 mb-4 shadow">
+    <div class="font-bold">Rosario → Mendoza</div>
+    <div class="text-sm text-gray-600">20/01 – 14:30 · 2 plazas</div>
+    <div class="flex justify-between items-center mt-2">
+      <span class="font-bold">$12.000</span>
+      <a href="https://wa.me/5491187654321" target="_blank"
+         class="bg-green-500 text-white px-3 py-1 rounded flex items-center gap-1">
+        <i class="fab fa-whatsapp"></i> Contactar
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- PUBLICAR VIAJE -->
+<section id="publicar" class="p-4 bg-white">
+  <h2 class="font-bold mb-3">➕ Publicar viaje</h2>
+
+  <form onsubmit="event.preventDefault(); alert('Viaje publicado. Te contactarán por WhatsApp'); this.reset();"
+        class="space-y-3">
+
+    <input required placeholder="Origen" class="w-full p-2 border rounded">
+    <input required placeholder="Destino" class="w-full p-2 border rounded">
+    <input type="date" required class="w-full p-2 border rounded">
+    <input type="time" required class="w-full p-2 border rounded">
+    <input type="number" required placeholder="Plazas disponibles" class="w-full p-2 border rounded">
+    <input type="number" required placeholder="Precio por persona" class="w-full p-2 border rounded">
+    <input required placeholder="Tu WhatsApp" class="w-full p-2 border rounded">
+
+    <button class="w-full bg-indigo-600 text-white p-2 rounded font-bold">
+      Publicar viaje
+    </button>
+  </form>
+</section>
+
+<!-- FOOTER -->
+<footer class="text-center text-sm text-gray-500 p-4">
+  © 2026 ComVi · Compartiendo viajes
+</footer>
+
+</body>
+</html>
