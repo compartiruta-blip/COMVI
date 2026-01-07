@@ -71,8 +71,6 @@ footer {
 
 <section>
   <h3>📍 Publicar viaje</h3>
-  <input id="origen" placeholder="Origen" />
-  <input id="destino" placeholder="Destino" />
   <input type="text" id="origen" placeholder="Origen">
   <input type="text" id="destino" placeholder="Destino">
   <input type="time" id="hora">
@@ -161,28 +159,37 @@ async function mostrarViajes() {
    PUBLICAR VIAJE
 ================================ */
 async function publicarViaje() {
-  const origen = document.getElementById("origen").value;
-  const destino = document.getElementById("destino").value;
+  const origen = document.getElementById("origen").value.trim();
+  const destino = document.getElementById("destino").value.trim();
   const hora = document.getElementById("hora").value;
-  const telefono = document.getElementById("telefono").value;
+  const telefono = document.getElementById("telefono").value.trim();
 
   if (!origen || !destino || !hora || !telefono) {
     alert("Completá todos los campos");
     return;
   }
 
-  const { error } = await supabase.from("viajes").insert([
-    { origen, destino, hora, telefono }
-  ]);
+  if (!/^[0-9]{10,15}$/.test(telefono)) {
+    alert("Teléfono inválido");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("viajes")
+    .insert([
+      { origen, destino, hora, telefono }
+    ]);
 
   if (error) {
-    alert("Error al publicar");
+    alert("Error al publicar el viaje");
+    console.error(error);
     return;
   }
 
   alert("Viaje publicado");
-  mostrarViajes();
+  location.reload();
 }
+
 
 /* ===============================
    INIT
