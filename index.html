@@ -130,6 +130,12 @@ document.getElementById("contador").innerText = visitas;
 /* ===============================
    MOSTRAR VIAJES
 ================================ */
+  function formatearFecha(fechaISO) {
+  return new Date(fechaISO).toLocaleString("es-AR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  });
+}
 async function mostrarViajes() {
   const { data, error } = await sb
     .from("viajes")
@@ -145,23 +151,13 @@ async function mostrarViajes() {
   contenedor.innerHTML = "";
 
   data.forEach(v => {
-
-  const fh = new Date(v.fecha_hora);
-
-  const fecha = fh.toLocaleDateString("es-AR");
-  const hora = fh.toLocaleTimeString("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-
   const div = document.createElement("div");
   div.className = "viaje";
   div.innerHTML = `
     <strong>${v.origen} → ${v.destino}</strong><br>
-    📅 ${fecha} – 🕒 ${hora}<br>
+    🕒 ${formatearFecha(v.fecha_hora)}<br>
     📞 <a href="tel:${v.telefono}">${v.telefono}</a>
   `;
-
   contenedor.appendChild(div);
 });
 }
