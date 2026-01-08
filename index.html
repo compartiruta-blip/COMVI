@@ -73,7 +73,8 @@ footer {
   <h3>📍 Publicar viaje</h3>
   <input type="text" id="origen" placeholder="Origen">
   <input type="text" id="destino" placeholder="Destino">
-  <input type="datetime-local" id="fechaHora">
+  <input type="date" id="fecha">
+  <input type="time" id="hora">
   <input type="tel" id="telefono"
        placeholder="Teléfono de contacto"
        inputmode="numeric">
@@ -168,25 +169,32 @@ async function mostrarViajes() {
 async function publicarViaje() {
   const origen = document.getElementById("origen").value.trim();
   const destino = document.getElementById("destino").value.trim();
-  const fechaHora = new Date(
-  document.getElementById("fechaHora").value
-).toISOString();
+  const fecha = document.getElementById("fecha").value;
+  const hora = document.getElementById("hora").value;
   const telefono = document.getElementById("telefono").value.trim();
 
-  if (!origen || !destino || !fechaHora || !telefono) {
+  if (!origen || !destino || !fecha || !hora || !telefono) {
     alert("Completá todos los campos");
     return;
   }
 
+  // unir fecha + hora en formato ISO válido
+  const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
+
   const { error } = await sb
     .from("viajes")
     .insert([
-      { origen, destino, fecha_hora: fechaHora, telefono }
+      {
+        origen,
+        destino,
+        fecha_hora: fechaHoraISO,
+        telefono
+      }
     ]);
 
   if (error) {
+    console.error("SUPABASE ERROR:", error);
     alert("Error al publicar");
-    console.error(error);
     return;
   }
 
