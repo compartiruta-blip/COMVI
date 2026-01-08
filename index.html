@@ -168,7 +168,9 @@ async function mostrarViajes() {
 async function publicarViaje() {
   const origen = document.getElementById("origen").value.trim();
   const destino = document.getElementById("destino").value.trim();
-  const fechaHora = document.getElementById("fechaHora").value;
+  const fechaHora = new Date(
+  document.getElementById("fechaHora").value
+).toISOString();
   const telefono = document.getElementById("telefono").value.trim();
 
   if (!origen || !destino || !fechaHora || !telefono) {
