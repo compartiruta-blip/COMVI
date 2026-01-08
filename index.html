@@ -175,30 +175,25 @@ async function publicarViaje() {
   const fechaHora = document.getElementById("fechaHora").value;
   const telefono = document.getElementById("telefono").value.trim();
 
-  if (!origen || !destino || !hora || !telefono) {
+  if (!origen || !destino || !fechaHora || !telefono) {
     alert("Completá todos los campos");
-    return;
-  }
-
-  if (!/^[0-9]{10,15}$/.test(telefono)) {
-    alert("Teléfono inválido");
     return;
   }
 
   const { error } = await sb
     .from("viajes")
     .insert([
-      { origen, destino, hora, telefono }
+      { origen, destino, fecha_hora: fechaHora, telefono }
     ]);
 
   if (error) {
-    alert("Error al publicar el viaje");
+    alert("Error al publicar");
     console.error(error);
     return;
   }
 
   alert("Viaje publicado");
-  location.reload();
+  mostrarViajes();
 }
 
 
