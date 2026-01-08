@@ -118,15 +118,35 @@ const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-
+  
 /* ===============================
-   CONTADOR LOCAL (MVP)
+   VISITAS REALES
 ================================ */
-let visitas = localStorage.getItem("visitas_comvi") || 0;
-visitas++;
-localStorage.setItem("visitas_comvi", visitas);
-document.getElementById("contador").innerText = visitas;
+
+// insertar una visita
+async function registrarVisita() {
+  const { error } = await sb
+    .from("visitas")
+    .insert([{}]);
+
+  if (error) {
+    console.error("Error registrando visita", error);
+  }
+}
+
+// obtener total de visitas
+async function cargarContador() {
+  const { count, error } = await sb
+    .from("visitas")
+    .select("*", { count: "exact", head: true });
+
+  if (error) {
+    console.error("Error contando visitas", error);
+    return;
+  }
+
+  document.getElementById("contador").innerText = count;
+}
 
 /* ===============================
    MOSTRAR VIAJES
@@ -206,7 +226,10 @@ async function publicarViaje() {
 /* ===============================
    INIT
 ================================ */
+registrarVisita();
+cargarContador();
 mostrarViajes();
+
 </script>
 
 
