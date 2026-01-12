@@ -163,16 +163,35 @@ async function registrarVisita() {
 /* ===============================
    MOSTRAR VIAJES
 ================================ */
-  function contactarConductor(viajeId) {
-  alert(
-    "El contacto directo estará disponible próximamente vía WhatsApp.\n\n" +
-    "Mientras tanto, el equipo de ComVi puede ponerte en contacto."
+  async function contactarConductor(viajeId) {
+  const userHash = obtenerUserHash();
+
+  const { error } = await sb
+    .from("contactos")
+    .insert([{
+      viaje_id: viajeId,
+      user_hash: userHash
+    }]);
+
+  if (error) {
+    alert("Error registrando contacto");
+    console.error(error);
+    return;
+  }
+
+  const mensaje = encodeURIComponent(
+    "Hola! Quiero contactar a un conductor por un viaje publicado en ComVi."
   );
 
-  // futuro:
-  // registrar intención de contacto
-  // redirigir a WhatsApp API
+  // TU NÚMERO DE WHATSAPP (formato internacional, sin +)
+  const telefonoAdmin = "5491158025832";
+
+  window.open(
+    `https://wa.me/${telefonoAdmin}?text=${mensaje}`,
+    "_blank"
+  );
 }
+
 function formatearFecha(fechaISO) {
   return new Date(fechaISO).toLocaleString("es-AR", {
     dateStyle: "short",
