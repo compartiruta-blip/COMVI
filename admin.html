@@ -54,7 +54,8 @@ button {
 ================================ */
 const SUPABASE_URL = "TU_URL_PROD";
 const SUPABASE_KEY = "TU_KEY_PROD";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 
 /* ===============================
    CARGAR CONTACTOS
