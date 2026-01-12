@@ -105,33 +105,34 @@ async function cargarContactos() {
 
     const v = viajes[0];
 
+    const esPendiente = c.estado === "pendiente";
+    const estadoTexto = esPendiente ? "⏳ Pendiente" : "✔ Gestionado";
+
     const div = document.createElement("div");
     div.className = "card";
 
     div.innerHTML = `
-  <strong>${v.origen} → ${v.destino}</strong><br>
-  🕒 ${new Date(v.fecha_hora).toLocaleString()}<br>
-  const estadoTexto =
-  c.estado === "gestionado"
-    ? "✔ Gestionado"
-    : "⏳ Pendiente";
-<br><br>
+      <strong>${v.origen} → ${v.destino}</strong><br>
+      🕒 ${new Date(v.fecha_hora).toLocaleString()}<br>
+      <span class="estado">Estado: ${estadoTexto}</span><br><br>
 
-  <button onclick="abrirWhatsapp('${v.telefono}', '${v.origen}', '${v.destino}', '${v.fecha_hora}')">
-    💬 Hablar con chofer
-  </button>
+      <button onclick="abrirWhatsapp('${v.telefono}', '${v.origen}', '${v.destino}', '${v.fecha_hora}')">
+        💬 Hablar con chofer
+      </button>
 
-  <button onclick="marcarGestionado('${c.id}')"
-          style="background:#198754;margin-left:6px;">
-    ✔ Gestionado
-  </button>
-`;
-
+      ${
+        esPendiente
+          ? `<button onclick="marcarGestionado('${c.id}')"
+                     style="background:#198754;margin-left:6px;">
+               ✔ Marcar gestionado
+             </button>`
+          : ""
+      }
+    `;
 
     cont.appendChild(div);
   }
 }
-
 
 /* ===============================
    WHATSAPP
