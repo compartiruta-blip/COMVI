@@ -60,19 +60,9 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
    CARGAR CONTACTOS
 ================================ */
 async function cargarContactos() {
-  const { data, error } = await sb
+  const { data: contactos, error } = await sb
     .from("contactos")
-    .select(`
-      id,
-      created_at,
-      estado,
-      viajes (
-        origen,
-        destino,
-        fecha_hora,
-        telefono
-      )
-    `)
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -84,22 +74,33 @@ async function cargarContactos() {
   const cont = document.getElementById("listaContactos");
   cont.innerHTML = "";
 
-  data.forEach(c => {
+  for (const c of contactos) {
+    const { data: viajes, error: errViaje } = await sb
+      .from("viajes")
+      .select("*")
+      .eq("id", c.viaje_id)
+      .limit(1);
+
+    if (errViaje || !viajes.length) continue;
+
+    const v = viajes[0];
+
     const div = document.createElement("div");
     div.className = "card";
 
     div.innerHTML = `
-      <strong>${c.viajes.origen} → ${c.viajes.destino}</strong><br>
-      🕒 ${new Date(c.viajes.fecha_hora).toLocaleString()}<br>
+      <strong>${v.origen} → ${v.destino}</strong><br>
+      🕒 ${new Date(v.fecha_hora).toLocaleString()}<br>
       <span class="estado">Estado: ${c.estado}</span><br><br>
-      <button onclick="abrirWhatsapp('${c.viajes.telefono}')">
+      <button onclick="abrirWhatsapp('${v.telefono}')">
         💬 Hablar con chofer
       </button>
     `;
 
     cont.appendChild(div);
-  });
+  }
 }
+
 
 /* ===============================
    WHATSAPP
