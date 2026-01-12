@@ -114,6 +114,15 @@ footer {
 /* ===============================
    CONFIG SUPABASE
 ================================ */
+  function obtenerUserHash() {
+  let hash = localStorage.getItem("comvi_user_hash");
+  if (!hash) {
+    hash = crypto.randomUUID();
+    localStorage.setItem("comvi_user_hash", hash);
+  }
+  return hash;
+}
+
 const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
 
@@ -125,33 +134,46 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // insertar una visita
 async function registrarVisita() {
-  const { error } = await sb
-    .from("visitas")
-    .insert([{}]);
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    const geo = await res.json();
 
-  if (error) {
-    console.error("Error registrando visita", error);
+    const { error } = await sb
+      .from("visitas")
+      .insert([{
+        ip: geo.ip,
+        city: geo.city,
+        region: geo.region,
+        country: geo.country_name,
+        latitude: geo.latitude,
+        longitude: geo.longitude,
+        user_hash: obtenerUserHash()
+      }]);
+
+    if (error) {
+      console.error("Error guardando visita", error);
+    }
+  } catch (e) {
+    console.error("Error obteniendo geolocalización", e);
   }
 }
 
-// obtener total de visitas
-async function cargarContador() {
-  const { count, error } = await sb
-    .from("visitas")
-    .select("*", { count: "exact", head: true });
 
-  if (error) {
-    console.error("Error contando visitas", error);
-    return;
-  }
-
-  document.getElementById("contador").innerText = count;
-}
 
 /* ===============================
    MOSTRAR VIAJES
 ================================ */
-  function formatearFecha(fechaISO) {
+  function contactarConductor(viajeId) {
+  alert(
+    "El contacto directo estará disponible próximamente vía WhatsApp.\n\n" +
+    "Mientras tanto, el equipo de ComVi puede ponerte en contacto."
+  );
+
+  // futuro:
+  // registrar intención de contacto
+  // redirigir a WhatsApp API
+}
+function formatearFecha(fechaISO) {
   return new Date(fechaISO).toLocaleString("es-AR", {
     dateStyle: "short",
     timeStyle: "short"
@@ -177,7 +199,10 @@ async function mostrarViajes() {
   div.innerHTML = `
     <strong>${v.origen} → ${v.destino}</strong><br>
     🕒 ${formatearFecha(v.fecha_hora)}<br>
-    📞 <a href="tel:${v.telefono}">${v.telefono}</a>
+    📞 <button onclick="contactarConductor('${v.id}')">
+  💬 Contactar conductor
+</button>
+
   `;
   contenedor.appendChild(div);
 });
