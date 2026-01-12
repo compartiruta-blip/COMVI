@@ -111,7 +111,11 @@ async function cargarContactos() {
     div.innerHTML = `
   <strong>${v.origen} → ${v.destino}</strong><br>
   🕒 ${new Date(v.fecha_hora).toLocaleString()}<br>
-  <span class="estado">Estado: ${c.estado}</span><br><br>
+  const estadoTexto =
+  c.estado === "gestionado"
+    ? "✔ Gestionado"
+    : "⏳ Pendiente";
+<br><br>
 
   <button onclick="abrirWhatsapp('${v.telefono}', '${v.origen}', '${v.destino}', '${v.fecha_hora}')">
     💬 Hablar con chofer
