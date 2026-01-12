@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>ComVi – Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  margin: 0;
+}
+header {
+  background: #222;
+  color: white;
+  padding: 12px;
+  text-align: center;
+}
+.card {
+  background: white;
+  margin: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 0 4px rgba(0,0,0,.1);
+}
+button {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: #0d6efd;
+  color: white;
+  cursor: pointer;
+}
+.estado {
+  font-size: 12px;
+  color: #666;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h3>📋 ComVi – Panel Admin</h3>
+</header>
+
+<div id="listaContactos"></div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+/* ===============================
+   SUPABASE (PROD)
+================================ */
+const SUPABASE_URL = "TU_URL_PROD";
+const SUPABASE_KEY = "TU_KEY_PROD";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ===============================
+   CARGAR CONTACTOS
+================================ */
+async function cargarContactos() {
+  const { data: contactos, error } = await sb
+    .from("contactos")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert("Error cargando contactos");
+    console.error(error);
+    return;
+  }
+
+  const cont = document.getElementById("listaContactos");
+  cont.innerHTML = "";
+
+  for (const c of contactos) {
+    const { data: viajes, error: errViaje } = await sb
+      .from("viajes")
+      .select("*")
+      .eq("id", c.viaje_id)
+      .limit(1);
+
+    if (errViaje || !viajes.length) continue;
+
+    const v = viajes[0];
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <strong>${v.origen} → ${v.destino}</strong><br>
+      🕒 ${new Date(v.fecha_hora).toLocaleString()}<br>
+      <span class="estado">Estado: ${c.estado}</span><br><br>
+      <button onclick="abrirWhatsapp('${v.telefono}')">
+        💬 Hablar con chofer
+      </button>
+    `;
+
+    cont.appendChild(div);
+  }
+}
+
+
+/* ===============================
+   WHATSAPP
+================================ */
+function abrirWhatsapp(telefono) {
+  window.open(`https://wa.me/${telefono}`, "_blank");
+}
+
+cargarContactos();
+</script>
+
+</body>
+</html>
