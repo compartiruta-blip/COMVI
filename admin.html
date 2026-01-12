@@ -133,6 +133,24 @@ async function cargarContactos() {
    WHATSAPP
 ================================ */
 function abrirWhatsapp(telefono, origen, destino, fechaHora) {
+  // limpiar todo lo que no sea número
+  let tel = telefono.replace(/\D/g, "");
+
+  // si empieza con 0 (ej: 011...), lo sacamos
+  if (tel.startsWith("0")) {
+    tel = tel.substring(1);
+  }
+
+  // si no tiene código país, asumimos Argentina
+  if (!tel.startsWith("54")) {
+    tel = "54" + tel;
+  }
+
+  // si no tiene el 9 móvil argentino, lo agregamos
+  if (!tel.startsWith("549")) {
+    tel = tel.replace(/^54/, "549");
+  }
+
   const fecha = new Date(fechaHora).toLocaleString("es-AR");
 
   const mensaje = encodeURIComponent(
@@ -143,10 +161,11 @@ function abrirWhatsapp(telefono, origen, destino, fechaHora) {
   );
 
   window.open(
-    `https://wa.me/${telefono}?text=${mensaje}`,
+    `https://wa.me/${tel}?text=${mensaje}`,
     "_blank"
   );
 }
+
 
 cargarContactos();
 </script>
