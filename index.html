@@ -134,29 +134,17 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // insertar una visita
 async function registrarVisita() {
-  try {
-    const res = await fetch("https://ipapi.co/json/");
-    const geo = await res.json();
+  const { error } = await sb
+    .from("visitas")
+    .insert([{
+      user_hash: obtenerUserHash()
+    }]);
 
-    const { error } = await sb
-      .from("visitas")
-      .insert([{
-        ip: geo.ip,
-        city: geo.city,
-        region: geo.region,
-        country: geo.country_name,
-        latitude: geo.latitude,
-        longitude: geo.longitude,
-        user_hash: obtenerUserHash()
-      }]);
-
-    if (error) {
-      console.error("Error guardando visita", error);
-    }
-  } catch (e) {
-    console.error("Error obteniendo geolocalización", e);
+  if (error) {
+    console.error("Error guardando visita", error);
   }
 }
+
 
 
 
