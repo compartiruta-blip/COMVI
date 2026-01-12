@@ -216,13 +216,13 @@ async function mostrarViajes() {
   const div = document.createElement("div");
   div.className = "viaje";
   div.innerHTML = `
-    <strong>${v.origen} → ${v.destino}</strong><br>
-    🕒 ${formatearFecha(v.fecha_hora)}<br>
-    📞 <button onclick="contactarConductor('${v.id}')">
-  💬 Contactar conductor
-</button>
+  <strong>${v.origen} → ${v.destino}</strong><br>
+  🕒 ${formatearFecha(v.fecha_hora)}<br><br>
+  <button onclick="contactarConductor('${v.id}')">
+    💬 Contactar conductor
+  </button>
+`;
 
-  `;
   contenedor.appendChild(div);
 });
 }
