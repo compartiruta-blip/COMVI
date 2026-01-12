@@ -270,9 +270,11 @@ async function publicarViaje() {
 /* ===============================
    INIT
 ================================ */
-registrarVisita();
-cargarContador();
-mostrarViajes();
+window.addEventListener("load", () => {
+  registrarVisita();
+  cargarContador();
+  mostrarViajes();
+});
 
 </script>
 
