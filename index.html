@@ -266,6 +266,22 @@ async function publicarViaje() {
   mostrarViajes();
 }
 
+/* ===============================
+   VISITAS
+================================ */
+
+async function cargarContador() {
+  const { count, error } = await sb
+    .from("visitas")
+    .select("*", { count: "exact", head: true });
+
+  if (error) {
+    console.error("Error contando visitas", error);
+    return;
+  }
+
+  document.getElementById("contador").innerText = count ?? 0;
+}
 
 /* ===============================
    INIT
@@ -275,6 +291,7 @@ window.addEventListener("load", () => {
   cargarContador();
   mostrarViajes();
 });
+
 
 </script>
 
