@@ -58,6 +58,23 @@ const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+/* ==========================
+       MARCAR GESTIONADO 
+====================== */
+  async function marcarGestionado(contactoId) {
+  const { error } = await sb
+    .from("contactos")
+    .update({ estado: "gestionado" })
+    .eq("id", contactoId);
+
+  if (error) {
+    alert("Error actualizando estado");
+    console.error(error);
+    return;
+  }
+
+  cargarContactos(); // refresca la lista
+}
 
 /* ===============================
    CARGAR CONTACTOS
@@ -92,13 +109,20 @@ async function cargarContactos() {
     div.className = "card";
 
     div.innerHTML = `
-      <strong>${v.origen} → ${v.destino}</strong><br>
-      🕒 ${new Date(v.fecha_hora).toLocaleString()}<br>
-      <span class="estado">Estado: ${c.estado}</span><br><br>
-      <button onclick="abrirWhatsapp('${v.telefono}')">
-        💬 Hablar con chofer
-      </button>
-    `;
+  <strong>${v.origen} → ${v.destino}</strong><br>
+  🕒 ${new Date(v.fecha_hora).toLocaleString()}<br>
+  <span class="estado">Estado: ${c.estado}</span><br><br>
+
+  <button onclick="abrirWhatsapp('${v.telefono}', '${v.origen}', '${v.destino}', '${v.fecha_hora}')">
+    💬 Hablar con chofer
+  </button>
+
+  <button onclick="marcarGestionado('${c.id}')"
+          style="background:#198754;margin-left:6px;">
+    ✔ Gestionado
+  </button>
+`;
+
 
     cont.appendChild(div);
   }
@@ -108,8 +132,20 @@ async function cargarContactos() {
 /* ===============================
    WHATSAPP
 ================================ */
-function abrirWhatsapp(telefono) {
-  window.open(`https://wa.me/${telefono}`, "_blank");
+function abrirWhatsapp(telefono, origen, destino, fechaHora) {
+  const fecha = new Date(fechaHora).toLocaleString("es-AR");
+
+  const mensaje = encodeURIComponent(
+    `Hola! Te contacto por un viaje publicado en ComVi.\n\n` +
+    `${origen} → ${destino}\n` +
+    `Fecha y hora: ${fecha}\n\n` +
+    `Quedo atento, gracias.`
+  );
+
+  window.open(
+    `https://wa.me/${telefono}?text=${mensaje}`,
+    "_blank"
+  );
 }
 
 cargarContactos();
