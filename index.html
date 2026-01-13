@@ -1,85 +1,111 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ComVi – Carpooling</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComVi – Carpooling</title>
 
-<style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #fafafa;
-}
-header {
-  background: #0d6efd;
-  color: white;
-  padding: 12px;
-  text-align: center;
-}
-section {
-  padding: 12px;
-}
-input, button {
-  width: 100%;
-  padding: 10px;
-  margin: 6px 0;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-button {
-  background: #0d6efd;
-  color: white;
-  border: none;
-}
-.viaje {
-  background: white;
-  padding: 10px;
-  margin-bottom: 8px;
-  border-radius: 8px;
-  box-shadow: 0 0 4px rgba(0,0,0,0.1);
-}
-.ad {
-  background: #f0f0f0;
-  padding: 10px;
-  margin: 10px;
-  text-align: center;
-  border-radius: 8px;
-  font-size: 14px;
-}
-footer {
-  font-size: 12px;
-  text-align: center;
-  color: #666;
-  padding: 10px;
-}
-</style>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #fafafa; }
+    header { background: #0d6efd; color: white; padding: 12px; text-align: center; }
+    section { padding: 12px; }
+    input, select, button, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    textarea { min-height: 70px; resize: vertical; }
+    button { background: #0d6efd; color: white; border: none; cursor: pointer; }
+    button.secondary { background: #6c757d; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .viaje {
+      background: white;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+      border-left: 6px solid #0d6efd;
+    }
+    .viaje.busco { border-left-color: #198754; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    .chip { font-size: 12px; background: #f1f3f5; padding: 4px 8px; border-radius: 999px; }
+    .muted { color: #666; font-size: 12px; }
+    .ad {
+      background: #f0f0f0; padding: 10px; margin: 10px;
+      text-align: center; border-radius: 8px; font-size: 14px;
+    }
+    footer { font-size: 12px; text-align: center; color: #666; padding: 10px; }
+    .filters { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .pillbar { display:flex; gap:8px; flex-wrap:wrap; margin: 8px 0 4px; }
+    .pill {
+      padding: 8px 10px; border-radius: 999px; border: 1px solid #ddd;
+      background: white; cursor: pointer; font-size: 13px;
+    }
+    .pill.active { border-color: #0d6efd; color: #0d6efd; font-weight: bold; }
+  </style>
 </head>
 
 <body>
-
 <header>
-  <h2>🚗 ComVi</h2>
+  <h2 style="margin:0;">🚗 ComVi</h2>
   <div>Carpooling comunitario</div>
 </header>
 
 <!-- PUBLICIDAD SUPERIOR -->
 <div class="ad">
   <strong>Publicidad</strong><br>
-  Servicio Técnico · WhatsApp 11 5802-5832 · Asistencia Remota 
+  Servicio Técnico · WhatsApp 11 5802-5832 · Asistencia Remota
 </div>
 
 <section>
-  <h3>📍 Publicar viaje</h3>
-  <input type="text" id="origen" placeholder="Origen">
-  <input type="text" id="destino" placeholder="Destino">
-  <input type="date" id="fecha">
-  <input type="time" id="hora">
-  <input type="tel" id="telefono"
-       placeholder="Teléfono de contacto"
-       inputmode="numeric">
+  <h3>📍 Publicar</h3>
 
-<button type="button" onclick="publicarViaje()">Publicar</button>
+  <select id="tipo">
+    <option value="ofrezco">🚗 Ofrezco viaje</option>
+    <option value="busco">🧍 Busco viaje</option>
+  </select>
+
+  <div class="row">
+    <input type="text" id="origen" placeholder="Origen (ej: CABA / La Plata)">
+    <input type="text" id="destino" placeholder="Destino (ej: Gesell / Piriápolis)">
+  </div>
+
+  <div class="row">
+    <input type="date" id="fecha">
+    <input type="time" id="hora">
+  </div>
+
+  <div class="row">
+    <input type="number" id="asientos" placeholder="Asientos (ej: 1, 2)" min="1">
+    <input type="number" id="precio" placeholder="Precio por asiento (solo si ofrezco)" min="0">
+  </div>
+
+  <select id="equipaje">
+    <option value="">🧳 Equipaje (opcional)</option>
+    <option value="mochila">🎒 Mochila</option>
+    <option value="bolso">🧳 Bolso chico</option>
+    <option value="valija">🧳 Valija</option>
+    <option value="aconvenir">🤝 A convenir</option>
+  </select>
+
+  <label style="display:block;margin-top:6px;">
+    <input type="checkbox" id="fechaFlexible"> 📅 Fecha flexible
+  </label>
+  <label style="display:block;margin-top:6px;">
+    <input type="checkbox" id="horaAprox"> 🕒 Hora aproximada
+  </label>
+
+  <input type="text" id="punto" placeholder="📍 Punto de encuentro (opcional)">
+
+  <textarea id="comentario" maxlength="200" placeholder="📝 Comentario (mate, paradas, bultos… máx 200)"></textarea>
+
+  <input type="tel" id="telefono" placeholder="Teléfono de contacto (solo admin por ahora)" inputmode="numeric">
+
+  <button type="button" onclick="publicarViaje()">Publicar</button>
+  <div class="muted">Tip: lo que hoy escribirías en WhatsApp, cargalo acá en 30 segundos.</div>
 </section>
 
 <!-- DONACIÓN -->
@@ -87,7 +113,7 @@ footer {
   <a href="https://link.mercadopago.com.ar/donacomvi"
      target="_blank"
      style="display:block;padding:12px;background:#009ee3;color:white;
-            text-align:center;border-radius:8px;">
+            text-align:center;border-radius:8px;text-decoration:none;">
     ❤️ Donar para sostener ComVi
   </a>
 </section>
@@ -99,8 +125,21 @@ footer {
 </div>
 
 <section>
-  <h3>🗺️ Viajes disponibles</h3>
-  <div id="listaViajes"></div>
+  <h3>🗺️ Publicaciones</h3>
+
+  <div class="pillbar">
+    <div class="pill active" id="pill-todos" onclick="setFiltroTipo('todos')">Todos</div>
+    <div class="pill" id="pill-ofrezco" onclick="setFiltroTipo('ofrezco')">🚗 Ofrezco</div>
+    <div class="pill" id="pill-busco" onclick="setFiltroTipo('busco')">🧍 Busco</div>
+  </div>
+
+  <div class="filters">
+    <input type="text" id="filtroOrigen" placeholder="Filtrar origen">
+    <input type="text" id="filtroDestino" placeholder="Filtrar destino">
+    <button class="secondary" type="button" onclick="aplicarFiltros()">🔎 Buscar</button>
+  </div>
+
+  <div style="margin-top:10px;" id="listaViajes"></div>
 </section>
 
 <footer>
@@ -114,7 +153,7 @@ footer {
 /* ===============================
    CONFIG SUPABASE
 ================================ */
-  function obtenerUserHash() {
+function obtenerUserHash() {
   let hash = localStorage.getItem("comvi_user_hash");
   if (!hash) {
     hash = crypto.randomUUID();
@@ -125,138 +164,53 @@ footer {
 
 const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
-
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  
-/* ===============================
-   VISITAS REALES
-================================ */
 
-// insertar una visita
-async function registrarVisita() {
-  const { error } = await sb
-    .from("visitas")
-    .insert([{
-      user_hash: obtenerUserHash()
-    }]);
+// ADMIN WhatsApp intermediario (como lo tenés hoy)
+const telefonoAdmin = "5491158025832";
 
-  if (error) {
-    console.error("Error guardando visita", error);
-  }
-}
-
-
-
+// cache local para armar mensajes de WhatsApp con info del post
+let VIAJES_CACHE = [];
+let FILTRO_TIPO = "todos";
 
 /* ===============================
-   MOSTRAR VIAJES
+   UI helpers
 ================================ */
-  async function contactarConductor(viajeId) {
-  const userHash = obtenerUserHash();
-
-  const { error } = await sb
-    .from("contactos")
-    .insert([{
-      viaje_id: viajeId,
-      user_hash: userHash
-    }]);
-
-  if (error) {
-    alert("Error registrando contacto");
-    console.error(error);
-    return;
-  }
-
-  const mensaje = encodeURIComponent(
-    "Hola! Quiero contactar a un conductor por un viaje publicado en ComVi."
-  );
-
-  // TU NÚMERO DE WHATSAPP (formato internacional, sin +)
-  const telefonoAdmin = "5491158025832";
-
-  window.open(
-    `https://wa.me/${telefonoAdmin}?text=${mensaje}`,
-    "_blank"
-  );
+function togglePrecio() {
+  const tipo = document.getElementById("tipo").value;
+  const precio = document.getElementById("precio");
+  precio.style.display = (tipo === "ofrezco") ? "block" : "none";
+  if (tipo !== "ofrezco") precio.value = "";
 }
 
-function formatearFecha(fechaISO) {
-  return new Date(fechaISO).toLocaleString("es-AR", {
-    dateStyle: "short",
-    timeStyle: "short"
-  });
-}
-async function mostrarViajes() {
-  const { data, error } = await sb
-    .from("viajes")
-    .select("*")
-    .order("created_at", { ascending: false });
+function setFiltroTipo(tipo) {
+  FILTRO_TIPO = tipo;
 
-  if (error) {
-    alert("Error cargando viajes");
-    return;
-  }
+  document.getElementById("pill-todos").classList.toggle("active", tipo === "todos");
+  document.getElementById("pill-ofrezco").classList.toggle("active", tipo === "ofrezco");
+  document.getElementById("pill-busco").classList.toggle("active", tipo === "busco");
 
-  const contenedor = document.getElementById("listaViajes");
-  contenedor.innerHTML = "";
-
-  data.forEach(v => {
-  const div = document.createElement("div");
-  div.className = "viaje";
-  div.innerHTML = `
-  <strong>${v.origen} → ${v.destino}</strong><br>
-  🕒 ${formatearFecha(v.fecha_hora)}<br><br>
-  <button onclick="contactarConductor('${v.id}')">
-    💬 Contactar conductor
-  </button>
-`;
-
-  contenedor.appendChild(div);
-});
+  renderViajesFiltrados();
 }
 
-/* ===============================
-   PUBLICAR VIAJE
-================================ */
-async function publicarViaje() {
-  const origen = document.getElementById("origen").value.trim();
-  const destino = document.getElementById("destino").value.trim();
-  const fecha = document.getElementById("fecha").value;
-  const hora = document.getElementById("hora").value;
-  const telefono = document.getElementById("telefono").value.trim();
+function aplicarFiltros() {
+  renderViajesFiltrados();
+}
 
-  if (!origen || !destino || !fecha || !hora || !telefono) {
-    alert("Completá todos los campos");
-    return;
-  }
-
-  // unir fecha + hora en formato ISO válido
-  const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
-
-  const { error } = await sb
-    .from("viajes")
-    .insert([
-      {
-        origen,
-        destino,
-        fecha_hora: fechaHoraISO,
-        telefono
-      }
-    ]);
-
-  if (error) {
-    console.error("SUPABASE ERROR:", error);
-    alert("Error al publicar");
-    return;
-  }
-
-  alert("Viaje publicado");
-  mostrarViajes();
+function normalizar(s) {
+  return (s || "").toString().trim().toLowerCase();
 }
 
 /* ===============================
    VISITAS
 ================================ */
+async function registrarVisita() {
+  const { error } = await sb
+    .from("visitas")
+    .insert([{ user_hash: obtenerUserHash() }]);
+
+  if (error) console.error("Error guardando visita", error);
+}
 
 async function cargarContador() {
   const { count, error } = await sb
@@ -267,22 +221,231 @@ async function cargarContador() {
     console.error("Error contando visitas", error);
     return;
   }
-
   document.getElementById("contador").innerText = count ?? 0;
+}
+
+/* ===============================
+   FORMATO FECHA
+================================ */
+function formatearFecha(fechaISO) {
+  // maneja timestamptz
+  const d = new Date(fechaISO);
+  return d.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
+}
+
+/* ===============================
+   MOSTRAR PUBLICACIONES
+================================ */
+async function mostrarViajes() {
+  const { data, error } = await sb
+    .from("viajes")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert("Error cargando publicaciones");
+    console.error(error);
+    return;
+  }
+
+  VIAJES_CACHE = data || [];
+  renderViajesFiltrados();
+}
+
+function renderViajesFiltrados() {
+  const contenedor = document.getElementById("listaViajes");
+  contenedor.innerHTML = "";
+
+  const fOri = normalizar(document.getElementById("filtroOrigen").value);
+  const fDes = normalizar(document.getElementById("filtroDestino").value);
+
+  const filtrados = VIAJES_CACHE.filter(v => {
+    if (FILTRO_TIPO !== "todos" && v.tipo !== FILTRO_TIPO) return false;
+    if (fOri && !normalizar(v.origen).includes(fOri)) return false;
+    if (fDes && !normalizar(v.destino).includes(fDes)) return false;
+    return true;
+  });
+
+  if (filtrados.length === 0) {
+    contenedor.innerHTML = `<div class="muted">No hay publicaciones con esos filtros.</div>`;
+    return;
+  }
+
+  filtrados.forEach(v => {
+    const div = document.createElement("div");
+    div.className = "viaje " + (v.tipo === "busco" ? "busco" : "ofrezco");
+
+    const titulo = (v.tipo === "busco")
+      ? `🧍 BUSCO VIAJE — ${v.origen} → ${v.destino}`
+      : `🚗 OFREZCO VIAJE — ${v.origen} → ${v.destino}`;
+
+    const chips = [];
+
+    if (v.asientos) {
+      chips.push(v.tipo === "busco"
+        ? `💺 necesito ${v.asientos}`
+        : `💺 ${v.asientos} lugares`);
+    }
+    if (v.tipo === "ofrezco" && v.precio) chips.push(`💰 $${v.precio}`);
+    if (v.equipaje) chips.push(`🧳 ${v.equipaje}`);
+    if (v.fecha_flexible) chips.push("📅 flexible");
+    if (v.hora_aprox) chips.push("🕒 aprox");
+    if (v.punto_encuentro) chips.push("📍 punto");
+    if (v.comentario) chips.push("📝 nota");
+
+    const chipsHtml = chips.length
+      ? `<div class="chips">${chips.map(c => `<span class="chip">${c}</span>`).join("")}</div>`
+      : "";
+
+    const detalleExtra = `
+      ${v.punto_encuentro ? `<div class="muted">📍 ${v.punto_encuentro}</div>` : ""}
+      ${v.comentario ? `<div style="margin-top:6px;">📝 ${escapeHtml(v.comentario)}</div>` : ""}
+    `;
+
+    div.innerHTML = `
+      <strong>${escapeHtml(titulo)}</strong><br>
+      🕒 ${formatearFecha(v.fecha_hora)}<br>
+      ${chipsHtml}
+      ${detalleExtra}
+      <div style="margin-top:10px;">
+        <button onclick="contactarAdmin(${v.id})">💬 Contactar (admin)</button>
+      </div>
+    `;
+
+    contenedor.appendChild(div);
+  });
+}
+
+// Evita que un comentario rompa el HTML
+function escapeHtml(str) {
+  return (str || "").replace(/[&<>"']/g, m => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[m]));
+}
+
+/* ===============================
+   CONTACTO (admin intermediario)
+================================ */
+async function contactarAdmin(viajeId) {
+  const userHash = obtenerUserHash();
+  const v = VIAJES_CACHE.find(x => x.id === viajeId);
+
+  const { error } = await sb
+    .from("contactos")
+    .insert([{
+      viaje_id: viajeId,
+      user_hash: userHash,
+      estado: "nuevo"
+    }]);
+
+  if (error) {
+    alert("Error registrando contacto");
+    console.error(error);
+    return;
+  }
+
+  const mensajePlano =
+`Hola! Quiero coordinar desde ComVi.
+
+Tipo: ${v?.tipo === "busco" ? "BUSCO VIAJE" : "OFREZCO VIAJE"}
+Ruta: ${v?.origen} → ${v?.destino}
+Fecha/Hora: ${v?.fecha_hora ? formatearFecha(v.fecha_hora) : "-"}
+Asientos: ${v?.asientos ?? "-"}
+Precio: ${v?.precio ?? "-"}
+Equipaje: ${v?.equipaje ?? "-"}
+Punto: ${v?.punto_encuentro ?? "-"}
+Nota: ${v?.comentario ?? "-"}
+ID publicación: ${v?.id}`;
+
+  const mensaje = encodeURIComponent(mensajePlano);
+
+  window.open(`https://wa.me/${telefonoAdmin}?text=${mensaje}`, "_blank");
+}
+
+/* ===============================
+   PUBLICAR
+================================ */
+async function publicarViaje() {
+  const tipo = document.getElementById("tipo").value;
+  const origen = document.getElementById("origen").value.trim();
+  const destino = document.getElementById("destino").value.trim();
+  const fecha = document.getElementById("fecha").value;
+  const hora = document.getElementById("hora").value;
+  const telefono = document.getElementById("telefono").value.trim();
+
+  const asientos = parseInt(document.getElementById("asientos").value, 10) || null;
+  const precio = parseInt(document.getElementById("precio").value, 10) || null;
+  const equipaje = document.getElementById("equipaje").value || null;
+
+  const fechaFlexible = document.getElementById("fechaFlexible").checked;
+  const horaAprox = document.getElementById("horaAprox").checked;
+
+  const punto = document.getElementById("punto").value.trim() || null;
+  const comentario = document.getElementById("comentario").value.trim() || null;
+
+  // mínimos obligatorios
+  if (!origen || !destino || !fecha || !hora || !telefono) {
+    alert("Completá Origen, Destino, Fecha, Hora y Teléfono");
+    return;
+  }
+
+  // asientos obligatorio (en ambos casos, WhatsApp siempre lo incluye implícito)
+  if (!asientos || asientos < 1) {
+    alert("Indicá asientos (si buscás: cuántos necesitás; si ofrecés: cuántos lugares hay)");
+    return;
+  }
+
+  // precio recomendado solo en ofrezco (no obligatorio, pero conviene)
+  if (tipo === "ofrezco" && (precio === null || precio < 0)) {
+    // permitimos null, pero evitamos negativos
+    alert("Si ofrecés viaje, el precio no puede ser negativo (podés dejarlo vacío si aún no lo definís)");
+    return;
+  }
+
+  const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
+
+  const { error } = await sb
+    .from("viajes")
+    .insert([{
+      tipo,
+      origen,
+      destino,
+      fecha_hora: fechaHoraISO,
+      telefono,
+      asientos,
+      precio: (tipo === "ofrezco" ? precio : null),
+      equipaje,
+      fecha_flexible: fechaFlexible,
+      hora_aprox: horaAprox,
+      punto_encuentro: punto,
+      comentario
+    }]);
+
+  if (error) {
+    console.error("SUPABASE ERROR:", error);
+    alert("Error al publicar");
+    return;
+  }
+
+  alert("Publicado ✅");
+  // limpiar algunos campos para publicar rápido
+  document.getElementById("comentario").value = "";
+  document.getElementById("punto").value = "";
+  mostrarViajes();
 }
 
 /* ===============================
    INIT
 ================================ */
+document.getElementById("tipo").addEventListener("change", togglePrecio);
+
 window.addEventListener("load", () => {
+  togglePrecio();
   registrarVisita();
   cargarContador();
   mostrarViajes();
 });
-
-
 </script>
-
 
 </body>
 </html>
