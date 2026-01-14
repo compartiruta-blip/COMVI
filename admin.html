@@ -163,6 +163,7 @@ async function cargarContactos() {
 
   CONTACTOS_CACHE = contactos || [];
 
+  // Buscar todos los viajes requeridos en un solo query
   const viajeIds = Array.from(new Set(CONTACTOS_CACHE.map(c => c.viaje_id).filter(Boolean)));
 
   VIAJES_MAP = new Map();
@@ -177,10 +178,85 @@ async function cargarContactos() {
       console.error(errV);
       return;
     }
+
     for (const v of (viajes || [])) VIAJES_MAP.set(v.id, v);
   }
-
   renderContactos();
+}
+
+/* ===============================
+   ACCIONES
+================================ */
+
+function getContacto(id) {
+  return CONTACTOS_CACHE.find(x => x.id === id);
+}
+
+// link para que el chofer gestione el viaje
+function getChoferManageLink(v) {
+  // arma el link relativo en la misma carpeta del sitio
+  const url = new URL("chofer.html", window.location.href);
+  url.searchParams.set("edit_token", v.edit_token || "");
+  return url.toString();
+}
+
+function hablarChofer(contactoId) {
+  const c = getContacto(contactoId);
+  if (!c) { alert("Contacto no encontrado. Recarga la pagina."); return; }
+
+  const v = VIAJES_MAP.get(c.viaje_id);
+  if (!v) { alert("Viaje no encontrado. Recarga la pagina."); return; }
+
+  const tel = limpiarTelefonoAR(v.telefono);
+  if (!tel || tel.length < 10) {
+    console.error("Telefono invalido:", v.telefono, "->", tel);
+    alert("El viaje no tiene un telefono valido del chofer.");
+    return;
+  }
+
+  // ✅ sin token no hay link de gestión
+  if (!v.edit_token) {
+    console.error("Viaje sin edit_token:", v);
+    alert("Este viaje no tiene edit_token. Revisá que se guarde al publicar.");
+    return;
+  }
+
+  const fecha = fmtFecha(v.fecha_hora);
+  const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
+
+  const linkChofer = getChoferManageLink(v);
+
+  const texto =
+    "Hola! Te contacto por un viaje publicado en ComVi.\n\n" +
+    `${v.origen} -> ${v.destino}\n` +
+    `Fecha y hora: ${fecha}${v.hora_aprox ? " (aprox)" : ""}\n` +
+    `Asientos libres: ${v.asientos ?? "-"}\n` +
+    `Precio: ${precioTxt}\n` +
+    `Detalles: ${v.comentario ?? "-"}\n\n` +
+    "Gestion del viaje (link):\n" +
+    `${linkChofer}\n\n` +
+    `ID viaje: ${v.id}\n` +
+    `ID contacto: ${c.id}`;
+
+  const url = `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
+  const w = window.open(url, "_blank");
+  if (!w) alert("Popup bloqueado. Habilita popups para este sitio.");
+}
+
+async function marcarGestionado(contactoId) {
+  const { error } = await sb
+    .from("contactos")
+    .update({ estado: "gestionado" })
+    .eq("id", contactoId);
+
+  if (error) {
+    alert("Error actualizando estado");
+    console.error(error);
+    return;
+  }
+
+  await cargarMetricas();
+  await cargarContactos();
 }
 
 function renderContactos() {
@@ -223,16 +299,19 @@ function renderContactos() {
       ${v.comentario ? `<div style="margin-top:6px;">Detalles: ${escapeHtml(v.comentario)}</div>` : ""}
 
       <div style="margin-top:10px;">
-        <button onclick="hablarChofer(${c.id})">Hablar con chofer</button>
+        <button onclick="hablarChofer('${c.id}')">Hablar con chofer</button>
 
-        ${pendiente ? `<button class="green" onclick="marcarGestionado(${c.id})">Marcar gestionado</button>` : ""}
-
-        ${activo
-          ? `<button class="red" onclick="setActivo(${v.id}, false)">Pausar</button>`
-          : `<button class="green" onclick="setActivo(${v.id}, true)">Reactivar</button>`
+        ${pendiente
+          ? `<button class="green" onclick="marcarGestionado('${c.id}')">Marcar gestionado</button>`
+          : ""
         }
 
-        <button class="gray" onclick="toggleEdit(${v.id})">Editar viaje</button>
+        ${activo
+          ? `<button class="red" onclick="setActivo('${v.id}', false)">Pausar</button>`
+          : `<button class="green" onclick="setActivo('${v.id}', true)">Reactivar</button>`
+        }
+
+        <button class="gray" onclick="toggleEdit('${v.id}')">Editar viaje</button>
       </div>
 
       <div id="edit_${v.id}" style="display:none;">
@@ -285,66 +364,12 @@ function renderContactos() {
         <label class="muted">Detalles</label>
         <textarea id="comentario_${v.id}" maxlength="220">${escapeHtml(v.comentario ?? "")}</textarea>
 
-        <button class="green" onclick="guardarEdicion(${v.id})">Guardar cambios</button>
+        <button class="green" onclick="guardarEdicion('${v.id}')">Guardar cambios</button>
       </div>
     `;
 
     cont.appendChild(div);
   }
-}
-
-/* ===============================
-   ACCIONES
-================================ */
-function getContacto(id) {
-  return CONTACTOS_CACHE.find(x => x.id === id);
-}
-
-function hablarChofer(contactoId) {
-  const c = getContacto(contactoId);
-  if (!c) { alert("Contacto no encontrado. Recarga la pagina."); return; }
-
-  const v = VIAJES_MAP.get(c.viaje_id);
-  if (!v) { alert("Viaje no encontrado. Recarga la pagina."); return; }
-
-  const tel = limpiarTelefonoAR(v.telefono);
-  if (!tel || tel.length < 10) {
-    console.error("Telefono invalido:", v.telefono, "->", tel);
-    alert("El viaje no tiene un telefono valido del chofer.");
-    return;
-  }
-
-  const fecha = fmtFecha(v.fecha_hora);
-  const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
-
-  const texto =
-    "Hola! Te contacto por un viaje publicado en ComVi.\n\n" +
-    `${v.origen} -> ${v.destino}\n` +
-    `Fecha y hora: ${fecha}${v.hora_aprox ? " (aprox)" : ""}\n` +
-    `Asientos libres: ${v.asientos ?? "-"}\n` +
-    `Precio: ${precioTxt}\n` +
-    `Detalles: ${v.comentario ?? "-"}\n\n` +
-    `ID viaje: ${v.id} - ID contacto: ${c.id}`;
-
-  const url = `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
-  const w = window.open(url, "_blank");
-  if (!w) alert("Popup bloqueado. Habilita popups para este sitio.");
-}
-
-async function marcarGestionado(contactoId) {
-  const { error } = await sb
-    .from("contactos")
-    .update({ estado: "gestionado" })
-    .eq("id", contactoId);
-
-  if (error) {
-    alert("Error actualizando estado");
-    console.error(error);
-    return;
-  }
-
-  await cargarMetricas();
-  await cargarContactos();
 }
 
 async function setActivo(viajeId, activo) {
