@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>ComVi - Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+  body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; }
+  header { background: #222; color: white; padding: 12px; text-align: center; }
+
+  .card {
+    background: white; margin: 10px; padding: 12px; border-radius: 10px;
+    box-shadow: 0 0 4px rgba(0,0,0,.1);
+  }
+
+  .muted { font-size: 12px; color: #666; }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .badges { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .badge { font-size:12px; padding:4px 8px; background:#f1f3f5; border-radius:999px; }
+
+  button {
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    background: #0d6efd;
+    color: white;
+    cursor: pointer;
+    margin-right: 6px;
+    margin-top: 6px;
+  }
+  button.green { background:#198754; }
+  button.gray { background:#6c757d; }
+  button.red { background:#dc3545; }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+  textarea { min-height: 80px; resize: vertical; }
+
+  .hr { height: 1px; background: #eee; margin: 10px 0; }
+
+  .estadoPend { color:#b26a00; font-weight:bold; }
+  .estadoGest { color:#198754; font-weight:bold; }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h3 style="margin:0;">ComVi - Panel Admin</h3>
+  <div class="muted" style="color:#bbb;">Contactos + gestion + edicion</div>
+</header>
+
+<div class="card" id="metricas">Cargando metricas...</div>
+<div id="listaContactos"></div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+/* ===============================
+   SUPABASE
+================================ */
+const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let CONTACTOS_CACHE = [];
+let VIAJES_MAP = new Map(); // id -> viaje
+
+function fmtFecha(fechaISO) {
+  return new Date(fechaISO).toLocaleString("es-AR", { dateStyle:"short", timeStyle:"short" });
+}
+function toDateInputValue(fechaISO) {
+  const d = new Date(fechaISO);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+function toTimeInputValue(fechaISO) {
+  const d = new Date(fechaISO);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${hh}:${mi}`;
+}
+
+// Devuelve numero en formato WhatsApp AR: 549XXXXXXXXXX
+function limpiarTelefonoAR(telefono) {
+  let tel = (telefono ?? "").toString().trim();
+  tel = tel.replace(/\D/g, "");
+  if (!tel) return "";
+
+  if (tel.startsWith("00")) tel = tel.slice(2);
+  if (tel.startsWith("0")) tel = tel.slice(1);
+
+  if (!tel.startsWith("54")) tel = "54" + tel;
+  if (!tel.startsWith("549")) tel = tel.replace(/^54/, "549");
+
+  return tel;
+}
+
+function esPendienteEstado(estado) {
+  return (estado === "pendiente" || estado === "nuevo" || estado === null || estado === undefined || estado === "");
+}
+
+function escapeHtml(str) {
+  return (str || "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
+/* ===============================
+   METRICAS
+================================ */
+async function cargarMetricas() {
+  const m = document.getElementById("metricas");
+
+  const [vis, viajesAct, contTot, contPend] = await Promise.all([
+    sb.from("visitas").select("*", { count: "exact", head: true }),
+    sb.from("viajes").select("*", { count: "exact", head: true }).eq("activo", true),
+    sb.from("contactos").select("*", { count: "exact", head: true }),
+    sb.from("contactos").select("*", { count: "exact", head: true }).in("estado", ["nuevo","pendiente"])
+  ]);
+
+  if (vis.error || viajesAct.error || contTot.error || contPend.error) {
+    console.error(vis.error, viajesAct.error, contTot.error, contPend.error);
+    m.innerHTML = "<strong>Metricas</strong><br><span class='muted'>Error cargando metricas</span>";
+    return;
+  }
+
+  const total = contTot.count ?? 0;
+  const pend = contPend.count ?? 0;
+  const gest = total - pend;
+
+  m.innerHTML = `
+    <strong>Metricas</strong><br>
+    Visitas: <strong>${vis.count ?? 0}</strong> ·
+    Viajes activos: <strong>${viajesAct.count ?? 0}</strong> ·
+    Contactos: <strong>${total}</strong>
+    <span class="muted">(Pend: ${pend} · Gest: ${gest})</span>
+  `;
+}
+
+/* ===============================
+   CONTACTOS / VIAJES
+================================ */
+async function cargarContactos() {
+  const { data: contactos, error } = await sb
+    .from("contactos")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert("Error cargando contactos");
+    console.error(error);
+    return;
+  }
+
+  CONTACTOS_CACHE = contactos || [];
+
+  const viajeIds = Array.from(new Set(CONTACTOS_CACHE.map(c => c.viaje_id).filter(Boolean)));
+
+  VIAJES_MAP = new Map();
+  if (viajeIds.length > 0) {
+    const { data: viajes, error: errV } = await sb
+      .from("viajes")
+      .select("*")
+      .in("id", viajeIds);
+
+    if (errV) {
+      alert("Error cargando viajes");
+      console.error(errV);
+      return;
+    }
+    for (const v of (viajes || [])) VIAJES_MAP.set(v.id, v);
+  }
+
+  renderContactos();
+}
+
+function renderContactos() {
+  const cont = document.getElementById("listaContactos");
+  cont.innerHTML = "";
+
+  if (!CONTACTOS_CACHE.length) {
+    cont.innerHTML = `<div class="card">No hay contactos todavia.</div>`;
+    return;
+  }
+
+  for (const c of CONTACTOS_CACHE) {
+    const v = VIAJES_MAP.get(c.viaje_id);
+    if (!v) continue;
+
+    const pendiente = esPendienteEstado(c.estado);
+    const estadoHtml = pendiente
+      ? `<span class="estadoPend">Pendiente</span>`
+      : `<span class="estadoGest">Gestionado</span>`;
+
+    const activo = (v.activo === undefined || v.activo === null) ? true : !!v.activo;
+    const pubTxt = activo ? "Activa" : "Pausada";
+    const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <strong>${escapeHtml(v.origen)} -> ${escapeHtml(v.destino)}</strong><br>
+      Hora: ${fmtFecha(v.fecha_hora)} ${v.hora_aprox ? `<span class="muted">(aprox)</span>` : ""}<br>
+
+      <div class="badges">
+        <span class="badge">Estado contacto: ${estadoHtml}</span>
+        <span class="badge">Publicacion: <strong>${pubTxt}</strong></span>
+        <span class="badge">Asientos: ${v.asientos ?? "-"}</span>
+        <span class="badge">Precio: ${precioTxt}</span>
+      </div>
+
+      ${v.equipaje ? `<div class="muted">Equipaje: ${escapeHtml(v.equipaje)}</div>` : ""}
+      ${v.comentario ? `<div style="margin-top:6px;">Detalles: ${escapeHtml(v.comentario)}</div>` : ""}
+
+      <div style="margin-top:10px;">
+        <button onclick="hablarChofer(${c.id})">Hablar con chofer</button>
+
+        ${pendiente ? `<button class="green" onclick="marcarGestionado(${c.id})">Marcar gestionado</button>` : ""}
+
+        ${activo
+          ? `<button class="red" onclick="setActivo(${v.id}, false)">Pausar</button>`
+          : `<button class="green" onclick="setActivo(${v.id}, true)">Reactivar</button>`
+        }
+
+        <button class="gray" onclick="toggleEdit(${v.id})">Editar viaje</button>
+      </div>
+
+      <div id="edit_${v.id}" style="display:none;">
+        <div class="hr"></div>
+
+        <div class="row">
+          <div>
+            <label class="muted">Fecha</label>
+            <input type="date" id="fecha_${v.id}" value="${toDateInputValue(v.fecha_hora)}">
+          </div>
+          <div>
+            <label class="muted">Hora</label>
+            <input type="time" id="hora_${v.id}" value="${toTimeInputValue(v.fecha_hora)}">
+          </div>
+        </div>
+
+        <label class="muted">
+          <input type="checkbox" id="aprox_${v.id}" ${v.hora_aprox ? "checked" : ""}>
+          Horario aproximado
+        </label>
+
+        <div class="row">
+          <div>
+            <label class="muted">Asientos libres</label>
+            <input type="number" min="0" id="asientos_${v.id}" value="${v.asientos ?? 0}">
+          </div>
+          <div>
+            <label class="muted">Precio</label>
+            <input type="number" min="0" id="precio_${v.id}" value="${v.precio ?? ""}" ${(v.precio === null || v.precio === undefined) ? "disabled" : ""}>
+            <label class="muted" style="display:block;margin-top:6px;">
+              <input type="checkbox" id="aconvenir_${v.id}" ${(v.precio === null || v.precio === undefined) ? "checked" : ""} onchange="
+                const p=document.getElementById('precio_${v.id}');
+                p.disabled=this.checked;
+                if(this.checked) p.value='';
+              ">
+              A convenir
+            </label>
+          </div>
+        </div>
+
+        <label class="muted">Equipaje</label>
+        <select id="equipaje_${v.id}">
+          <option value="" ${!v.equipaje ? "selected" : ""}>(sin especificar)</option>
+          <option value="mochila" ${v.equipaje==="mochila" ? "selected" : ""}>mochila</option>
+          <option value="bolso" ${v.equipaje==="bolso" ? "selected" : ""}>bolso</option>
+          <option value="valija" ${v.equipaje==="valija" ? "selected" : ""}>valija</option>
+          <option value="aconvenir" ${v.equipaje==="aconvenir" ? "selected" : ""}>a convenir</option>
+        </select>
+
+        <label class="muted">Detalles</label>
+        <textarea id="comentario_${v.id}" maxlength="220">${escapeHtml(v.comentario ?? "")}</textarea>
+
+        <button class="green" onclick="guardarEdicion(${v.id})">Guardar cambios</button>
+      </div>
+    `;
+
+    cont.appendChild(div);
+  }
+}
+
+/* ===============================
+   ACCIONES
+================================ */
+function getContacto(id) {
+  return CONTACTOS_CACHE.find(x => x.id === id);
+}
+
+function hablarChofer(contactoId) {
+  const c = getContacto(contactoId);
+  if (!c) { alert("Contacto no encontrado. Recarga la pagina."); return; }
+
+  const v = VIAJES_MAP.get(c.viaje_id);
+  if (!v) { alert("Viaje no encontrado. Recarga la pagina."); return; }
+
+  const tel = limpiarTelefonoAR(v.telefono);
+  if (!tel || tel.length < 10) {
+    console.error("Telefono invalido:", v.telefono, "->", tel);
+    alert("El viaje no tiene un telefono valido del chofer.");
+    return;
+  }
+
+  const fecha = fmtFecha(v.fecha_hora);
+  const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
+
+  const texto =
+    "Hola! Te contacto por un viaje publicado en ComVi.\n\n" +
+    `${v.origen} -> ${v.destino}\n` +
+    `Fecha y hora: ${fecha}${v.hora_aprox ? " (aprox)" : ""}\n` +
+    `Asientos libres: ${v.asientos ?? "-"}\n` +
+    `Precio: ${precioTxt}\n` +
+    `Detalles: ${v.comentario ?? "-"}\n\n` +
+    `ID viaje: ${v.id} - ID contacto: ${c.id}`;
+
+  const url = `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
+  const w = window.open(url, "_blank");
+  if (!w) alert("Popup bloqueado. Habilita popups para este sitio.");
+}
+
+async function marcarGestionado(contactoId) {
+  const { error } = await sb
+    .from("contactos")
+    .update({ estado: "gestionado" })
+    .eq("id", contactoId);
+
+  if (error) {
+    alert("Error actualizando estado");
+    console.error(error);
+    return;
+  }
+
+  await cargarMetricas();
+  await cargarContactos();
+}
+
+async function setActivo(viajeId, activo) {
+  const { error } = await sb
+    .from("viajes")
+    .update({ activo })
+    .eq("id", viajeId);
+
+  if (error) {
+    alert("Error actualizando publicacion");
+    console.error(error);
+    return;
+  }
+
+  await cargarMetricas();
+  await cargarContactos();
+}
+
+function toggleEdit(viajeId) {
+  const el = document.getElementById(`edit_${viajeId}`);
+  el.style.display = (el.style.display === "none") ? "block" : "none";
+}
+
+async function guardarEdicion(viajeId) {
+  const fecha = document.getElementById(`fecha_${viajeId}`).value;
+  const hora = document.getElementById(`hora_${viajeId}`).value;
+
+  const horaAprox = document.getElementById(`aprox_${viajeId}`).checked;
+
+  const asientos = parseInt(document.getElementById(`asientos_${viajeId}`).value, 10);
+  const aConvenir = document.getElementById(`aconvenir_${viajeId}`).checked;
+  const precio = aConvenir ? null : (parseInt(document.getElementById(`precio_${viajeId}`).value, 10) || null);
+
+  const equipaje = document.getElementById(`equipaje_${viajeId}`).value || null;
+  const comentario = document.getElementById(`comentario_${viajeId}`).value.trim() || null;
+
+  if (!fecha || !hora) { alert("Completa fecha y hora"); return; }
+  if (Number.isNaN(asientos) || asientos < 0) { alert("Asientos invalidos"); return; }
+  if (precio !== null && precio < 0) { alert("Precio invalido"); return; }
+
+  const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
+
+  const { error } = await sb
+    .from("viajes")
+    .update({
+      fecha_hora: fechaHoraISO,
+      hora_aprox: horaAprox,
+      asientos,
+      precio,
+      equipaje,
+      comentario
+    })
+    .eq("id", viajeId);
+
+  if (error) {
+    alert("Error guardando cambios");
+    console.error(error);
+    return;
+  }
+
+  await cargarMetricas();
+  await cargarContactos();
+}
+
+/* ===============================
+   INIT
+================================ */
+(async function init() {
+  await cargarMetricas();
+  await cargarContactos();
+})();
+</script>
+
+</body>
+</html>
