@@ -239,18 +239,46 @@ function renderViajes() {
     return;
   }
 
-  VIAJES_CACHE.forEach(v => {
+  // ✅ Orden: primero con lugares, luego completos
+  const disponibles = VIAJES_CACHE.filter(v =>
+    v.asientos !== null && v.asientos !== undefined && v.asientos > 0
+  );
+
+  const completos = VIAJES_CACHE.filter(v =>
+    v.asientos !== null && v.asientos !== undefined && v.asientos <= 0
+  );
+
+  // si por algún motivo asientos viene null/undefined, lo mandamos al final
+  const sinDato = VIAJES_CACHE.filter(v =>
+    v.asientos === null || v.asientos === undefined
+  );
+
+  const ordenados = [...disponibles, ...completos, ...sinDato];
+
+  ordenados.forEach(v => {
     const div = document.createElement("div");
     div.className = "viaje";
 
     const chips = [];
+
+    // ✅ Asientos: mostrar incluso si es 0
+    let completo = false;
     if (v.asientos !== null && v.asientos !== undefined) {
-        if (v.asientos > 0) chips.push(`💺 ${v.asientos} lugares libres`);
-        else chips.push(`💺 Completo (sin lugares)`);
+      if (v.asientos > 0) chips.push(`💺 ${v.asientos} lugares libres`);
+      else {
+        chips.push(`💺 Completo (sin lugares)`);
+        completo = true;
+      }
+    } else {
+      // si no hay dato, lo tratamos como no-contactable
+      chips.push(`💺 (sin dato)`);
+      completo = true;
     }
 
-
-    const precioTxt = (v.precio === null || v.precio === undefined) ? `💰 A convenir` : `💰 $${v.precio}`;
+    // ✅ Precio
+    const precioTxt = (v.precio === null || v.precio === undefined)
+      ? `💰 A convenir`
+      : `💰 $${v.precio}`;
     chips.push(precioTxt);
 
     if (v.equipaje) chips.push(`🧳 ${v.equipaje}`);
@@ -258,25 +286,26 @@ function renderViajes() {
 
     const chipsHtml = `<div class="chips">${chips.map(c => `<span class="chip">${c}</span>`).join("")}</div>`;
 
-    const completo = (v.asientos !== null && v.asientos !== undefined && v.asientos <= 0);
+    div.innerHTML = `
+      <div class="ruta">${escapeHtml(v.origen)} → ${escapeHtml(v.destino)}</div>
+      <div>🕒 ${formatearFecha(v.fecha_hora)}${v.hora_aprox ? ' <span class="muted">(aprox)</span>' : ''}</div>
+      ${chipsHtml}
+      ${v.comentario ? `<div style="margin-top:6px;">📝 ${escapeHtml(v.comentario)}</div>` : ""}
 
-div.innerHTML = `
-  <div class="ruta">${escapeHtml(v.origen)} → ${escapeHtml(v.destino)}</div>
-  <div>🕒 ${formatearFecha(v.fecha_hora)}${v.hora_aprox ? ' <span class="muted">(aprox)</span>' : ''}</div>
-  ${chipsHtml}
-  ${v.comentario ? `<div style="margin-top:6px;">📝 ${escapeHtml(v.comentario)}</div>` : ""}
+      <div style="margin-top:10px;">
+        ${
+          completo
+            ? `<button disabled style="background:#adb5bd;cursor:not-allowed;">🚫 Sin lugares (completo)</button>
+               <div class="muted" style="margin-top:6px;">Este viaje ya tiene los asientos reservados.</div>`
+            : `<button onclick="contactarAdmin(${v.id})">💬 Contactar (admin)</button>`
+        }
+      </div>
+    `;
 
-  <div style="margin-top:10px;">
-    ${
-      completo
-        ? `<button disabled style="background:#adb5bd;cursor:not-allowed;">🚫 Sin lugares (completo)</button>
-           <div class="muted" style="margin-top:6px;">Este viaje ya tiene los asientos reservados.</div>`
-        : `<button onclick="contactarAdmin(${v.id})">💬 Contactar (admin)</button>`
-    }
-  </div>
-`;
-
+    contenedor.appendChild(div);
+  });
 }
+
 
 /* ===============================
    CONTACTO (admin intermediario)
