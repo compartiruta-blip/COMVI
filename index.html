@@ -273,8 +273,8 @@ async function publicarViaje() {
 
   const equipaje = document.getElementById("equipaje").value || null;
   const horaAprox = document.getElementById("horaAprox").checked;
-  const punto = document.getElementById("punto").value.trim() || null;
-  const comentario = document.getElementById("comentario").value.trim() || null;
+  const detalles = document.getElementById("detalles").value.trim() || null;
+
 
   if (!origen || !destino || !fecha || !hora || !telefono) {
     alert("Completá Origen, Destino, Fecha, Hora y Teléfono");
@@ -300,8 +300,8 @@ async function publicarViaje() {
     precio,
     equipaje,
     hora_aprox: horaAprox,
-    punto_encuentro: punto,
-    comentario
+    comentario: detalles,
+    punto_encuentro: null
   }]);
 
   if (error) {
