@@ -180,9 +180,6 @@ async function cargarContactos() {
     for (const v of (viajes || [])) VIAJES_MAP.set(v.id, v);
   }
 
-  renderContactos();
-}
-
 function renderContactos() {
   const cont = document.getElementById("listaContactos");
   cont.innerHTML = "";
@@ -223,16 +220,19 @@ function renderContactos() {
       ${v.comentario ? `<div style="margin-top:6px;">Detalles: ${escapeHtml(v.comentario)}</div>` : ""}
 
       <div style="margin-top:10px;">
-        <button onclick="hablarChofer(${c.id})">Hablar con chofer</button>
+        <button onclick="hablarChofer('${c.id}')">Hablar con chofer</button>
 
-        ${pendiente ? `<button class="green" onclick="marcarGestionado(${c.id})">Marcar gestionado</button>` : ""}
-
-        ${activo
-          ? `<button class="red" onclick="setActivo(${v.id}, false)">Pausar</button>`
-          : `<button class="green" onclick="setActivo(${v.id}, true)">Reactivar</button>`
+        ${pendiente
+          ? `<button class="green" onclick="marcarGestionado('${c.id}')">Marcar gestionado</button>`
+          : ""
         }
 
-        <button class="gray" onclick="toggleEdit(${v.id})">Editar viaje</button>
+        ${activo
+          ? `<button class="red" onclick="setActivo('${v.id}', false)">Pausar</button>`
+          : `<button class="green" onclick="setActivo('${v.id}', true)">Reactivar</button>`
+        }
+
+        <button class="gray" onclick="toggleEdit('${v.id}')">Editar viaje</button>
       </div>
 
       <div id="edit_${v.id}" style="display:none;">
@@ -285,7 +285,7 @@ function renderContactos() {
         <label class="muted">Detalles</label>
         <textarea id="comentario_${v.id}" maxlength="220">${escapeHtml(v.comentario ?? "")}</textarea>
 
-        <button class="green" onclick="guardarEdicion(${v.id})">Guardar cambios</button>
+        <button class="green" onclick="guardarEdicion('${v.id}')">Guardar cambios</button>
       </div>
     `;
 
