@@ -340,6 +340,9 @@ async function publicarViaje() {
   // unir fecha + hora en ISO válido
   const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
 
+  // ✅ token privado de edición para el chofer
+  const editToken = crypto.randomUUID();
+
   const { error } = await sb
     .from("viajes")
     .insert([{
@@ -351,10 +354,10 @@ async function publicarViaje() {
       precio,
       equipaje,
       hora_aprox: horaAprox,
-      // unificamos todo en comentario (como "Detalles")
       comentario: detalles,
-      // dejamos punto_encuentro por compatibilidad de DB (no lo usamos acá)
-      punto_encuentro: null
+      punto_encuentro: null,
+      activo: true,
+      edit_token: editToken
     }]);
 
   if (error) {
@@ -363,9 +366,12 @@ async function publicarViaje() {
     return;
   }
 
+  // (opcional) por ahora mostramos el token para test rápido
+  // después lo sacamos y lo manejás desde admin
+  console.log("EDIT TOKEN:", editToken);
+
   alert("Viaje publicado ✅");
 
-  // limpieza mínima
   document.getElementById("detalles").value = "";
   mostrarViajes();
 }
