@@ -17,8 +17,9 @@
       border: 1px solid #ccc;
       box-sizing: border-box;
     }
-    textarea { min-height: 70px; resize: vertical; }
+    textarea { min-height: 90px; resize: vertical; }
     button { background: #0d6efd; color: white; border: none; cursor: pointer; }
+    button.secondary { background: #6c757d; }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
     .viaje {
@@ -30,7 +31,6 @@
       border-left: 6px solid #0d6efd;
     }
     .ruta { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
-    .meta { margin-top: 6px; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
     .chip { font-size: 12px; background: #f1f3f5; padding: 4px 8px; border-radius: 999px; }
     .muted { color: #666; font-size: 12px; }
@@ -41,11 +41,11 @@
     footer { font-size: 12px; text-align: center; color: #666; padding: 10px; }
 
     .inlineCheck {
-      display:flex; align-items:center; gap:8px;
+      display:flex; align-items:flex-start; gap:8px;
       background:#fff; border:1px solid #ddd; padding:10px; border-radius:8px;
       margin: 6px 0;
     }
-    .inlineCheck input { width:auto; margin:0; }
+    .inlineCheck input { width:auto; margin-top:2px; }
   </style>
 </head>
 
@@ -55,6 +55,7 @@
   <div>Carpooling comunitario</div>
 </header>
 
+<!-- PUBLICIDAD SUPERIOR -->
 <div class="ad">
   <strong>Publicidad</strong><br>
   Servicio Técnico · WhatsApp 11 5802-5832 · Asistencia Remota
@@ -73,22 +74,27 @@
     <input type="time" id="hora">
   </div>
 
-  <div class="inlineCheck" title="Si la hora no es exacta">
+  <div class="inlineCheck" title="Marcá esto si la hora no es exacta (ej: cerca de las 17)">
     <input type="checkbox" id="horaAprox">
-    <label for="horaAprox"><strong>Horario aproximado</strong> <span class="muted">(ej: “cerca de las 17”)</span></label>
+    <label for="horaAprox">
+      <strong>Horario aproximado</strong><br>
+      <span class="muted">Si no es exacto, marcá esto (ej: “cerca de las 17”).</span>
+    </label>
   </div>
-  
+
   <div class="row">
-  <input type="number" id="asientos" placeholder="💺 Lugares disponibles (ej: 2)" min="1">
-</div>
+    <input type="number" id="asientos" placeholder="💺 Lugares disponibles (ej: 2)" min="1">
+  </div>
 
-<div class="inlineCheck" title="Marcá esto si el precio se define por chat">
-  <input type="checkbox" id="precioAConvenir" />
-  <label for="precioAConvenir"><strong>Precio a convenir</strong> <span class="muted">(se coordina por WhatsApp)</span></label>
-</div>
+  <div class="inlineCheck" title="Marcá esto si el precio se define por chat">
+    <input type="checkbox" id="precioAConvenir" />
+    <label for="precioAConvenir">
+      <strong>Precio a convenir</strong><br>
+      <span class="muted">Se coordina por WhatsApp (opcional).</span>
+    </label>
+  </div>
 
-<input type="number" id="precio" placeholder="💰 Precio por asiento (ej: 30000)" min="0">
-
+  <input type="number" id="precio" placeholder="💰 Precio por asiento (ej: 30000)" min="0">
 
   <select id="equipaje">
     <option value="">🧳 Equipaje (opcional)</option>
@@ -99,7 +105,7 @@
   </select>
 
   <textarea id="detalles" maxlength="220"
-  placeholder="📝 Detalles (punto de encuentro, paradas, equipaje, etc.) máx 220"></textarea>
+    placeholder="📝 Detalles (punto de encuentro, paradas, equipaje, etc.) máx 220"></textarea>
 
   <input type="tel" id="telefono" placeholder="Teléfono de contacto (por ahora admin intermedia)" inputmode="numeric">
 
@@ -107,6 +113,7 @@
   <div class="muted">Tip: facilitá detalles en “Detalles”. Ganamos todos 🙌</div>
 </section>
 
+<!-- DONACIÓN -->
 <section>
   <a href="https://link.mercadopago.com.ar/donacomvi"
      target="_blank"
@@ -116,6 +123,7 @@
   </a>
 </section>
 
+<!-- PUBLICIDAD MEDIA -->
 <div class="ad">
   ¿Querés anunciar acá?<br>
   📧 <a href="mailto:admcomvi@gmail.com">admcomvi@gmail.com</a>
@@ -134,6 +142,9 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
 <script>
+/* ===============================
+   CONFIG SUPABASE
+================================ */
 function obtenerUserHash() {
   let hash = localStorage.getItem("comvi_user_hash");
   if (!hash) {
@@ -147,9 +158,14 @@ const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ADMIN WhatsApp intermediario
 const telefonoAdmin = "5491158025832";
+
 let VIAJES_CACHE = [];
 
+/* ===============================
+   HELPERS
+================================ */
 function formatearFecha(fechaISO) {
   const d = new Date(fechaISO);
   return d.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
@@ -160,21 +176,55 @@ function escapeHtml(str) {
   }[m]));
 }
 
-/* ========= VISITAS ========= */
+/* ===============================
+   UI (precio a convenir)
+================================ */
+function setupPrecioAConvenir() {
+  const chk = document.getElementById("precioAConvenir");
+  const precioInput = document.getElementById("precio");
+
+  function apply() {
+    const on = chk.checked;
+    precioInput.disabled = on;
+    if (on) precioInput.value = "";
+  }
+  chk.addEventListener("change", apply);
+  apply();
+}
+
+/* ===============================
+   VISITAS
+================================ */
 async function registrarVisita() {
-  const { error } = await sb.from("visitas").insert([{ user_hash: obtenerUserHash() }]);
+  const { error } = await sb
+    .from("visitas")
+    .insert([{ user_hash: obtenerUserHash() }]);
   if (error) console.error("Error guardando visita", error);
 }
+
 async function cargarContador() {
-  const { count, error } = await sb.from("visitas").select("*", { count: "exact", head: true });
+  const { count, error } = await sb
+    .from("visitas")
+    .select("*", { count: "exact", head: true });
   if (error) return console.error("Error contando visitas", error);
   document.getElementById("contador").innerText = count ?? 0;
 }
 
-/* ========= MOSTRAR VIAJES ========= */
+/* ===============================
+   MOSTRAR VIAJES
+================================ */
 async function mostrarViajes() {
-  const { data, error } = await sb.from("viajes").select("*").order("created_at", { ascending: false });
-  if (error) { alert("Error cargando viajes"); console.error(error); return; }
+  const { data, error } = await sb
+    .from("viajes")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert("Error cargando viajes");
+    console.error(error);
+    return;
+  }
+
   VIAJES_CACHE = data || [];
   renderViajes();
 }
@@ -194,8 +244,10 @@ function renderViajes() {
 
     const chips = [];
     if (v.asientos) chips.push(`💺 ${v.asientos} lugares`);
-    // precio: si es null => a convenir
-    chips.push(v.precio === null || v.precio === undefined ? `💰 A convenir` : `💰 $${v.precio}`);
+
+    const precioTxt = (v.precio === null || v.precio === undefined) ? `💰 A convenir` : `💰 $${v.precio}`;
+    chips.push(precioTxt);
+
     if (v.equipaje) chips.push(`🧳 ${v.equipaje}`);
     if (v.hora_aprox) chips.push("🕒 aprox");
 
@@ -203,10 +255,9 @@ function renderViajes() {
 
     div.innerHTML = `
       <div class="ruta">${escapeHtml(v.origen)} → ${escapeHtml(v.destino)}</div>
-      <div>🕒 ${formatearFecha(v.fecha_hora)}</div>
+      <div>🕒 ${formatearFecha(v.fecha_hora)}${v.hora_aprox ? ' <span class="muted">(aprox)</span>' : ''}</div>
       ${chipsHtml}
-      ${v.punto_encuentro ? `<div class="muted">📍 ${escapeHtml(v.punto_encuentro)}</div>` : ""}
-      ${v.comentario ? `<div class="meta">📝 ${escapeHtml(v.comentario)}</div>` : ""}
+      ${v.comentario ? `<div style="margin-top:6px;">📝 ${escapeHtml(v.comentario)}</div>` : ""}
       <div style="margin-top:10px;">
         <button onclick="contactarAdmin(${v.id})">💬 Contactar (admin)</button>
       </div>
@@ -215,18 +266,26 @@ function renderViajes() {
   });
 }
 
-/* ========= CONTACTO ========= */
+/* ===============================
+   CONTACTO (admin intermediario)
+================================ */
 async function contactarAdmin(viajeId) {
   const userHash = obtenerUserHash();
   const v = VIAJES_CACHE.find(x => x.id === viajeId);
 
-  const { error } = await sb.from("contactos").insert([{
-    viaje_id: viajeId,
-    user_hash: userHash,
-    estado: "nuevo"
-  }]);
+  const { error } = await sb
+    .from("contactos")
+    .insert([{
+      viaje_id: viajeId,
+      user_hash: userHash,
+      estado: "nuevo"
+    }]);
 
-  if (error) { alert("Error registrando contacto"); console.error(error); return; }
+  if (error) {
+    alert("Error registrando contacto");
+    console.error(error);
+    return;
+  }
 
   const precioTxt = (v?.precio === null || v?.precio === undefined) ? "A convenir" : `$${v?.precio}`;
 
@@ -238,27 +297,16 @@ Fecha/Hora: ${v?.fecha_hora ? formatearFecha(v.fecha_hora) : "-"}${v?.hora_aprox
 Lugares: ${v?.asientos ?? "-"}
 Precio: ${precioTxt}
 Equipaje: ${v?.equipaje ?? "-"}
-Punto: ${v?.punto_encuentro ?? "-"}
-Nota: ${v?.comentario ?? "-"}
+Detalles: ${v?.comentario ?? "-"}
 ID publicación: ${v?.id}`;
 
-  window.open(`https://wa.me/${telefonoAdmin}?text=${encodeURIComponent(mensajePlano)}`, "_blank");
+  const mensaje = encodeURIComponent(mensajePlano);
+  window.open(`https://wa.me/${telefonoAdmin}?text=${mensaje}`, "_blank");
 }
 
-/* ========= PUBLICAR ========= */
-function setupPrecioAConvenir() {
-  const chk = document.getElementById("precioAConvenir");
-  const precioInput = document.getElementById("precio");
-
-  function apply() {
-    const on = chk.checked;
-    precioInput.disabled = on;
-    if (on) precioInput.value = "";
-  }
-  chk.addEventListener("change", apply);
-  apply();
-}
-
+/* ===============================
+   PUBLICAR VIAJE
+================================ */
 async function publicarViaje() {
   const origen = document.getElementById("origen").value.trim();
   const destino = document.getElementById("destino").value.trim();
@@ -266,15 +314,14 @@ async function publicarViaje() {
   const hora = document.getElementById("hora").value;
   const telefono = document.getElementById("telefono").value.trim();
 
+  const horaAprox = document.getElementById("horaAprox").checked;
   const asientos = parseInt(document.getElementById("asientos").value, 10) || null;
 
   const precioAConvenir = document.getElementById("precioAConvenir").checked;
   const precio = precioAConvenir ? null : (parseInt(document.getElementById("precio").value, 10) || null);
 
   const equipaje = document.getElementById("equipaje").value || null;
-  const horaAprox = document.getElementById("horaAprox").checked;
   const detalles = document.getElementById("detalles").value.trim() || null;
-
 
   if (!origen || !destino || !fecha || !hora || !telefono) {
     alert("Completá Origen, Destino, Fecha, Hora y Teléfono");
@@ -289,20 +336,25 @@ async function publicarViaje() {
     return;
   }
 
+  // unir fecha + hora en ISO válido
   const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
 
-  const { error } = await sb.from("viajes").insert([{
-    origen,
-    destino,
-    fecha_hora: fechaHoraISO,
-    telefono,
-    asientos,
-    precio,
-    equipaje,
-    hora_aprox: horaAprox,
-    comentario: detalles,
-    punto_encuentro: null
-  }]);
+  const { error } = await sb
+    .from("viajes")
+    .insert([{
+      origen,
+      destino,
+      fecha_hora: fechaHoraISO,
+      telefono,
+      asientos,
+      precio,
+      equipaje,
+      hora_aprox: horaAprox,
+      // unificamos todo en comentario (como "Detalles")
+      comentario: detalles,
+      // dejamos punto_encuentro por compatibilidad de DB (no lo usamos acá)
+      punto_encuentro: null
+    }]);
 
   if (error) {
     console.error("SUPABASE ERROR:", error);
@@ -311,12 +363,15 @@ async function publicarViaje() {
   }
 
   alert("Viaje publicado ✅");
-  document.getElementById("comentario").value = "";
-  document.getElementById("punto").value = "";
+
+  // limpieza mínima
+  document.getElementById("detalles").value = "";
   mostrarViajes();
 }
 
-/* ========= INIT ========= */
+/* ===============================
+   INIT
+================================ */
 window.addEventListener("load", () => {
   setupPrecioAConvenir();
   registrarVisita();
