@@ -324,8 +324,11 @@ async function guardarCambios() {
 
   // actualizar cache local
   VIAJE = { ...VIAJE, ...payload };
-  document.getElementById("saveMsg").innerText = "Guardado ✅";
+
+  // primero render, después mensaje (así no lo borra)
   render();
+  document.getElementById("saveMsg").innerText = "Guardado ✅";
+
 }
 
 window.addEventListener("load", () => {
