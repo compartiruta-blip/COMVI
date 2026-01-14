@@ -194,11 +194,12 @@ function getContacto(id) {
 
 // link para que el chofer gestione el viaje
 function getChoferManageLink(v) {
-  // arma el link relativo en la misma carpeta del sitio
-  const url = new URL("chofer.html", window.location.href);
-  url.searchParams.set("edit_token", v.edit_token || "");
-  return url.toString();
+  // Base folder (ej: /COMVI/)
+  const basePath = window.location.pathname.split("/").slice(0, -1).join("/");
+  const token = encodeURIComponent(v.edit_token || "");
+  return `${window.location.origin}${basePath}/chofer.html?token=${token}`;
 }
+
 
 function hablarChofer(contactoId) {
   const c = getContacto(contactoId);
