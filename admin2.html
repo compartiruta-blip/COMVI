@@ -163,6 +163,7 @@ async function cargarContactos() {
 
   CONTACTOS_CACHE = contactos || [];
 
+  // Buscar todos los viajes requeridos en un solo query
   const viajeIds = Array.from(new Set(CONTACTOS_CACHE.map(c => c.viaje_id).filter(Boolean)));
 
   VIAJES_MAP = new Map();
@@ -177,9 +178,65 @@ async function cargarContactos() {
       console.error(errV);
       return;
     }
+
     for (const v of (viajes || [])) VIAJES_MAP.set(v.id, v);
   }
+  renderContactos();
+}
 
+/* ===============================
+   ACCIONES
+================================ */
+function getContacto(id) {
+  return CONTACTOS_CACHE.find(x => x.id === id);
+}
+
+function hablarChofer(contactoId) {
+  const c = getContacto(contactoId);
+  if (!c) { alert("Contacto no encontrado. Recarga la pagina."); return; }
+
+  const v = VIAJES_MAP.get(c.viaje_id);
+  if (!v) { alert("Viaje no encontrado. Recarga la pagina."); return; }
+
+  const tel = limpiarTelefonoAR(v.telefono);
+  if (!tel || tel.length < 10) {
+    console.error("Telefono invalido:", v.telefono, "->", tel);
+    alert("El viaje no tiene un telefono valido del chofer.");
+    return;
+  }
+
+  const fecha = fmtFecha(v.fecha_hora);
+  const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
+
+  const texto =
+    "Hola! Te contacto por un viaje publicado en ComVi.\n\n" +
+    `${v.origen} -> ${v.destino}\n` +
+    `Fecha y hora: ${fecha}${v.hora_aprox ? " (aprox)" : ""}\n` +
+    `Asientos libres: ${v.asientos ?? "-"}\n` +
+    `Precio: ${precioTxt}\n` +
+    `Detalles: ${v.comentario ?? "-"}\n\n` +
+    `ID viaje: ${v.id} - ID contacto: ${c.id}`;
+
+  const url = `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
+  const w = window.open(url, "_blank");
+  if (!w) alert("Popup bloqueado. Habilita popups para este sitio.");
+}
+
+async function marcarGestionado(contactoId) {
+  const { error } = await sb
+    .from("contactos")
+    .update({ estado: "gestionado" })
+    .eq("id", contactoId);
+
+  if (error) {
+    alert("Error actualizando estado");
+    console.error(error);
+    return;
+  }
+
+  await cargarMetricas();
+  await cargarContactos();
+}
 function renderContactos() {
   const cont = document.getElementById("listaContactos");
   cont.innerHTML = "";
@@ -291,60 +348,6 @@ function renderContactos() {
 
     cont.appendChild(div);
   }
-}
-
-/* ===============================
-   ACCIONES
-================================ */
-function getContacto(id) {
-  return CONTACTOS_CACHE.find(x => x.id === id);
-}
-
-function hablarChofer(contactoId) {
-  const c = getContacto(contactoId);
-  if (!c) { alert("Contacto no encontrado. Recarga la pagina."); return; }
-
-  const v = VIAJES_MAP.get(c.viaje_id);
-  if (!v) { alert("Viaje no encontrado. Recarga la pagina."); return; }
-
-  const tel = limpiarTelefonoAR(v.telefono);
-  if (!tel || tel.length < 10) {
-    console.error("Telefono invalido:", v.telefono, "->", tel);
-    alert("El viaje no tiene un telefono valido del chofer.");
-    return;
-  }
-
-  const fecha = fmtFecha(v.fecha_hora);
-  const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
-
-  const texto =
-    "Hola! Te contacto por un viaje publicado en ComVi.\n\n" +
-    `${v.origen} -> ${v.destino}\n` +
-    `Fecha y hora: ${fecha}${v.hora_aprox ? " (aprox)" : ""}\n` +
-    `Asientos libres: ${v.asientos ?? "-"}\n` +
-    `Precio: ${precioTxt}\n` +
-    `Detalles: ${v.comentario ?? "-"}\n\n` +
-    `ID viaje: ${v.id} - ID contacto: ${c.id}`;
-
-  const url = `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
-  const w = window.open(url, "_blank");
-  if (!w) alert("Popup bloqueado. Habilita popups para este sitio.");
-}
-
-async function marcarGestionado(contactoId) {
-  const { error } = await sb
-    .from("contactos")
-    .update({ estado: "gestionado" })
-    .eq("id", contactoId);
-
-  if (error) {
-    alert("Error actualizando estado");
-    console.error(error);
-    return;
-  }
-
-  await cargarMetricas();
-  await cargarContactos();
 }
 
 async function setActivo(viajeId, activo) {
