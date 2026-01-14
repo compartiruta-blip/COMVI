@@ -58,7 +58,7 @@
 <!-- PUBLICIDAD SUPERIOR -->
 <div class="ad">
   <strong>Publicidad</strong><br>
-  Servicio Técnico · WhatsApp 11 5802-5832 · Asistencia Remota
+  Servicio Técnico 💻· WhatsApp 11 5802-5832 · 📲Asistencia Remota
 </div>
 
 <section>
@@ -217,6 +217,7 @@ async function mostrarViajes() {
   const { data, error } = await sb
     .from("viajes")
     .select("*")
+    .eq("activo", true)
     .order("created_at", { ascending: false });
 
   if (error) {
