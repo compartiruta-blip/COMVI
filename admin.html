@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<title>ComVi – Admin</title>
+<title>ComVi - Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
@@ -53,11 +53,11 @@
 <body>
 
 <header>
-  <h3 style="margin:0;">👁‍🗨 ComVi – Panel Admin</h3>
-  <div class="muted" style="color:#bbb;">Contactos + gestión + edición</div>
+  <h3 style="margin:0;">ComVi - Panel Admin</h3>
+  <div class="muted" style="color:#bbb;">Contactos + gestion + edicion</div>
 </header>
 
-<div class="card" id="metricas">Cargando métricas…</div>
+<div class="card" id="metricas">Cargando metricas...</div>
 <div id="listaContactos"></div>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -88,16 +88,30 @@ function toTimeInputValue(fechaISO) {
   const mi = String(d.getMinutes()).padStart(2,'0');
   return `${hh}:${mi}`;
 }
+
+// Devuelve numero en formato WhatsApp AR: 549XXXXXXXXXX
 function limpiarTelefonoAR(telefono) {
-  let tel = (telefono || "").toString().replace(/\D/g, "");
-  if (tel.startsWith("0")) tel = tel.substring(1);
+  let tel = (telefono ?? "").toString().trim();
+  tel = tel.replace(/\D/g, "");
+  if (!tel) return "";
+
+  if (tel.startsWith("00")) tel = tel.slice(2);
+  if (tel.startsWith("0")) tel = tel.slice(1);
+
   if (!tel.startsWith("54")) tel = "54" + tel;
   if (!tel.startsWith("549")) tel = tel.replace(/^54/, "549");
+
   return tel;
 }
 
 function esPendienteEstado(estado) {
   return (estado === "pendiente" || estado === "nuevo" || estado === null || estado === undefined || estado === "");
+}
+
+function escapeHtml(str) {
+  return (str || "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
 }
 
 /* ===============================
@@ -115,7 +129,7 @@ async function cargarMetricas() {
 
   if (vis.error || viajesAct.error || contTot.error || contPend.error) {
     console.error(vis.error, viajesAct.error, contTot.error, contPend.error);
-    m.innerHTML = "<strong>📊 Métricas</strong><br><span class='muted'>Error cargando métricas</span>";
+    m.innerHTML = "<strong>Metricas</strong><br><span class='muted'>Error cargando metricas</span>";
     return;
   }
 
@@ -124,10 +138,10 @@ async function cargarMetricas() {
   const gest = total - pend;
 
   m.innerHTML = `
-    <strong>📊 Métricas</strong><br>
-    👀 Visitas: <strong>${vis.count ?? 0}</strong> ·
-    🚗 Viajes activos: <strong>${viajesAct.count ?? 0}</strong> ·
-    📩 Contactos: <strong>${total}</strong>
+    <strong>Metricas</strong><br>
+    Visitas: <strong>${vis.count ?? 0}</strong> ·
+    Viajes activos: <strong>${viajesAct.count ?? 0}</strong> ·
+    Contactos: <strong>${total}</strong>
     <span class="muted">(Pend: ${pend} · Gest: ${gest})</span>
   `;
 }
@@ -149,7 +163,6 @@ async function cargarContactos() {
 
   CONTACTOS_CACHE = contactos || [];
 
-  // Buscar todos los viajes requeridos en un solo query
   const viajeIds = Array.from(new Set(CONTACTOS_CACHE.map(c => c.viaje_id).filter(Boolean)));
 
   VIAJES_MAP = new Map();
@@ -175,7 +188,7 @@ function renderContactos() {
   cont.innerHTML = "";
 
   if (!CONTACTOS_CACHE.length) {
-    cont.innerHTML = `<div class="card">No hay contactos todavía.</div>`;
+    cont.innerHTML = `<div class="card">No hay contactos todavia.</div>`;
     return;
   }
 
@@ -185,42 +198,41 @@ function renderContactos() {
 
     const pendiente = esPendienteEstado(c.estado);
     const estadoHtml = pendiente
-      ? `<span class="estadoPend">⏳ Pendiente</span>`
-      : `<span class="estadoGest">✔ Gestionado</span>`;
+      ? `<span class="estadoPend">Pendiente</span>`
+      : `<span class="estadoGest">Gestionado</span>`;
 
     const activo = (v.activo === undefined || v.activo === null) ? true : !!v.activo;
     const pubTxt = activo ? "Activa" : "Pausada";
-
     const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
 
     const div = document.createElement("div");
     div.className = "card";
 
     div.innerHTML = `
-      <strong>${v.origen} → ${v.destino}</strong><br>
-      🕒 ${fmtFecha(v.fecha_hora)} ${v.hora_aprox ? `<span class="muted">(aprox)</span>` : ""}<br>
+      <strong>${escapeHtml(v.origen)} -> ${escapeHtml(v.destino)}</strong><br>
+      Hora: ${fmtFecha(v.fecha_hora)} ${v.hora_aprox ? `<span class="muted">(aprox)</span>` : ""}<br>
 
       <div class="badges">
         <span class="badge">Estado contacto: ${estadoHtml}</span>
-        <span class="badge">Publicación: <strong>${pubTxt}</strong></span>
-        <span class="badge">💺 ${v.asientos ?? "-"}</span>
-        <span class="badge">💰 ${precioTxt}</span>
+        <span class="badge">Publicacion: <strong>${pubTxt}</strong></span>
+        <span class="badge">Asientos: ${v.asientos ?? "-"}</span>
+        <span class="badge">Precio: ${precioTxt}</span>
       </div>
 
-      ${v.equipaje ? `<div class="muted">🧳 ${v.equipaje}</div>` : ""}
-      ${v.comentario ? `<div style="margin-top:6px;">📝 ${escapeHtml(v.comentario)}</div>` : ""}
+      ${v.equipaje ? `<div class="muted">Equipaje: ${escapeHtml(v.equipaje)}</div>` : ""}
+      ${v.comentario ? `<div style="margin-top:6px;">Detalles: ${escapeHtml(v.comentario)}</div>` : ""}
 
       <div style="margin-top:10px;">
-        <button onclick="hablarChofer(${c.id})">💬 Hablar con chofer</button>
+        <button onclick="hablarChofer(${c.id})">Hablar con chofer</button>
 
-        ${pendiente ? `<button class="green" onclick="marcarGestionado(${c.id})">✔ Marcar gestionado</button>` : ""}
+        ${pendiente ? `<button class="green" onclick="marcarGestionado(${c.id})">Marcar gestionado</button>` : ""}
 
         ${activo
-          ? `<button class="red" onclick="setActivo(${v.id}, false)">⏸ Pausar</button>`
-          : `<button class="green" onclick="setActivo(${v.id}, true)">▶ Reactivar</button>`
+          ? `<button class="red" onclick="setActivo(${v.id}, false)">Pausar</button>`
+          : `<button class="green" onclick="setActivo(${v.id}, true)">Reactivar</button>`
         }
 
-        <button class="gray" onclick="toggleEdit(${v.id})">✏️ Editar viaje</button>
+        <button class="gray" onclick="toggleEdit(${v.id})">Editar viaje</button>
       </div>
 
       <div id="edit_${v.id}" style="display:none;">
@@ -273,18 +285,12 @@ function renderContactos() {
         <label class="muted">Detalles</label>
         <textarea id="comentario_${v.id}" maxlength="220">${escapeHtml(v.comentario ?? "")}</textarea>
 
-        <button class="green" onclick="guardarEdicion(${v.id})">💾 Guardar cambios</button>
+        <button class="green" onclick="guardarEdicion(${v.id})">Guardar cambios</button>
       </div>
     `;
 
     cont.appendChild(div);
   }
-}
-
-function escapeHtml(str) {
-  return (str || "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[m]));
 }
 
 /* ===============================
@@ -296,24 +302,33 @@ function getContacto(id) {
 
 function hablarChofer(contactoId) {
   const c = getContacto(contactoId);
+  if (!c) { alert("Contacto no encontrado. Recarga la pagina."); return; }
+
   const v = VIAJES_MAP.get(c.viaje_id);
-  if (!v) return;
+  if (!v) { alert("Viaje no encontrado. Recarga la pagina."); return; }
 
   const tel = limpiarTelefonoAR(v.telefono);
+  if (!tel || tel.length < 10) {
+    console.error("Telefono invalido:", v.telefono, "->", tel);
+    alert("El viaje no tiene un telefono valido del chofer.");
+    return;
+  }
+
   const fecha = fmtFecha(v.fecha_hora);
   const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
 
-  const mensaje = encodeURIComponent(
-    `Hola! Te contacto por un viaje publicado en ComVi.\n\n` +
-    `${v.origen} → ${v.destino}\n` +
+  const texto =
+    "Hola! Te contacto por un viaje publicado en ComVi.\n\n" +
+    `${v.origen} -> ${v.destino}\n` +
     `Fecha y hora: ${fecha}${v.hora_aprox ? " (aprox)" : ""}\n` +
     `Asientos libres: ${v.asientos ?? "-"}\n` +
     `Precio: ${precioTxt}\n` +
     `Detalles: ${v.comentario ?? "-"}\n\n` +
-    `ID viaje: ${v.id} · ID contacto: ${c.id}`
-  );
+    `ID viaje: ${v.id} - ID contacto: ${c.id}`;
 
-  window.open(`https://wa.me/${tel}?text=${mensaje}`, "_blank");
+  const url = `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
+  const w = window.open(url, "_blank");
+  if (!w) alert("Popup bloqueado. Habilita popups para este sitio.");
 }
 
 async function marcarGestionado(contactoId) {
@@ -339,7 +354,7 @@ async function setActivo(viajeId, activo) {
     .eq("id", viajeId);
 
   if (error) {
-    alert("Error actualizando publicación");
+    alert("Error actualizando publicacion");
     console.error(error);
     return;
   }
@@ -366,9 +381,9 @@ async function guardarEdicion(viajeId) {
   const equipaje = document.getElementById(`equipaje_${viajeId}`).value || null;
   const comentario = document.getElementById(`comentario_${viajeId}`).value.trim() || null;
 
-  if (!fecha || !hora) { alert("Completá fecha y hora"); return; }
-  if (Number.isNaN(asientos) || asientos < 0) { alert("Asientos inválidos"); return; }
-  if (precio !== null && precio < 0) { alert("Precio inválido"); return; }
+  if (!fecha || !hora) { alert("Completa fecha y hora"); return; }
+  if (Number.isNaN(asientos) || asientos < 0) { alert("Asientos invalidos"); return; }
+  if (precio !== null && precio < 0) { alert("Precio invalido"); return; }
 
   const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
 
