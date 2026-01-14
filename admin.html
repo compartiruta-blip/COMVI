@@ -8,48 +8,73 @@
 <style>
   body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; }
   header { background: #222; color: white; padding: 12px; text-align: center; }
+
   .card {
-    background: white; margin: 10px; padding: 12px; border-radius: 8px;
+    background: white; margin: 10px; padding: 12px; border-radius: 10px;
     box-shadow: 0 0 4px rgba(0,0,0,.1);
   }
-  .row { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .muted { font-size: 12px; color:#666; }
-  .badges { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+
+  .muted { font-size: 12px; color: #666; }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .badges { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
   .badge { font-size:12px; padding:4px 8px; background:#f1f3f5; border-radius:999px; }
+
   button {
-    padding: 8px 10px; border: none; border-radius: 6px;
-    background: #0d6efd; color: white; cursor: pointer; margin-right: 6px; margin-top: 6px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    background: #0d6efd;
+    color: white;
+    cursor: pointer;
+    margin-right: 6px;
+    margin-top: 6px;
   }
   button.green { background:#198754; }
   button.gray { background:#6c757d; }
   button.red { background:#dc3545; }
+
   input, select, textarea {
-    width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;
-    margin:4px 0;
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
   }
-  textarea { min-height: 70px; resize: vertical; }
-  .hr { height:1px; background:#eee; margin:10px 0; }
+  textarea { min-height: 80px; resize: vertical; }
+
+  .hr { height: 1px; background: #eee; margin: 10px 0; }
+
+  .estadoPend { color:#b26a00; font-weight:bold; }
+  .estadoGest { color:#198754; font-weight:bold; }
 </style>
 </head>
 
 <body>
+
 <header>
   <h3 style="margin:0;">👁‍🗨 ComVi – Panel Admin</h3>
-  <div class="muted" style="color:#bbb;">Contactos, estado y edición de viajes</div>
+  <div class="muted" style="color:#bbb;">Contactos + gestión + edición</div>
 </header>
 
-<div id="lista"></div>
+<div class="card" id="metricas">Cargando métricas…</div>
+<div id="listaContactos"></div>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
+/* ===============================
+   SUPABASE
+================================ */
 const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+let CONTACTOS_CACHE = [];
+let VIAJES_MAP = new Map(); // id -> viaje
+
 function fmtFecha(fechaISO) {
   return new Date(fechaISO).toLocaleString("es-AR", { dateStyle:"short", timeStyle:"short" });
 }
-
 function toDateInputValue(fechaISO) {
   const d = new Date(fechaISO);
   const yyyy = d.getFullYear();
@@ -63,7 +88,6 @@ function toTimeInputValue(fechaISO) {
   const mi = String(d.getMinutes()).padStart(2,'0');
   return `${hh}:${mi}`;
 }
-
 function limpiarTelefonoAR(telefono) {
   let tel = (telefono || "").toString().replace(/\D/g, "");
   if (tel.startsWith("0")) tel = tel.substring(1);
@@ -72,246 +96,311 @@ function limpiarTelefonoAR(telefono) {
   return tel;
 }
 
-function abrirWhatsappChofer(telefono, origen, destino, fechaHora) {
-  const tel = limpiarTelefonoAR(telefono);
-  const fecha = fmtFecha(fechaHora);
+function esPendienteEstado(estado) {
+  return (estado === "pendiente" || estado === "nuevo" || estado === null || estado === undefined || estado === "");
+}
+
+/* ===============================
+   METRICAS
+================================ */
+async function cargarMetricas() {
+  const m = document.getElementById("metricas");
+
+  const [vis, viajesAct, contTot, contPend] = await Promise.all([
+    sb.from("visitas").select("*", { count: "exact", head: true }),
+    sb.from("viajes").select("*", { count: "exact", head: true }).eq("activo", true),
+    sb.from("contactos").select("*", { count: "exact", head: true }),
+    sb.from("contactos").select("*", { count: "exact", head: true }).in("estado", ["nuevo","pendiente"])
+  ]);
+
+  if (vis.error || viajesAct.error || contTot.error || contPend.error) {
+    console.error(vis.error, viajesAct.error, contTot.error, contPend.error);
+    m.innerHTML = "<strong>📊 Métricas</strong><br><span class='muted'>Error cargando métricas</span>";
+    return;
+  }
+
+  const total = contTot.count ?? 0;
+  const pend = contPend.count ?? 0;
+  const gest = total - pend;
+
+  m.innerHTML = `
+    <strong>📊 Métricas</strong><br>
+    👀 Visitas: <strong>${vis.count ?? 0}</strong> ·
+    🚗 Viajes activos: <strong>${viajesAct.count ?? 0}</strong> ·
+    📩 Contactos: <strong>${total}</strong>
+    <span class="muted">(Pend: ${pend} · Gest: ${gest})</span>
+  `;
+}
+
+/* ===============================
+   CONTACTOS / VIAJES
+================================ */
+async function cargarContactos() {
+  const { data: contactos, error } = await sb
+    .from("contactos")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert("Error cargando contactos");
+    console.error(error);
+    return;
+  }
+
+  CONTACTOS_CACHE = contactos || [];
+
+  // Buscar todos los viajes requeridos en un solo query
+  const viajeIds = Array.from(new Set(CONTACTOS_CACHE.map(c => c.viaje_id).filter(Boolean)));
+
+  VIAJES_MAP = new Map();
+  if (viajeIds.length > 0) {
+    const { data: viajes, error: errV } = await sb
+      .from("viajes")
+      .select("*")
+      .in("id", viajeIds);
+
+    if (errV) {
+      alert("Error cargando viajes");
+      console.error(errV);
+      return;
+    }
+    for (const v of (viajes || [])) VIAJES_MAP.set(v.id, v);
+  }
+
+  renderContactos();
+}
+
+function renderContactos() {
+  const cont = document.getElementById("listaContactos");
+  cont.innerHTML = "";
+
+  if (!CONTACTOS_CACHE.length) {
+    cont.innerHTML = `<div class="card">No hay contactos todavía.</div>`;
+    return;
+  }
+
+  for (const c of CONTACTOS_CACHE) {
+    const v = VIAJES_MAP.get(c.viaje_id);
+    if (!v) continue;
+
+    const pendiente = esPendienteEstado(c.estado);
+    const estadoHtml = pendiente
+      ? `<span class="estadoPend">⏳ Pendiente</span>`
+      : `<span class="estadoGest">✔ Gestionado</span>`;
+
+    const activo = (v.activo === undefined || v.activo === null) ? true : !!v.activo;
+    const pubTxt = activo ? "Activa" : "Pausada";
+
+    const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <strong>${v.origen} → ${v.destino}</strong><br>
+      🕒 ${fmtFecha(v.fecha_hora)} ${v.hora_aprox ? `<span class="muted">(aprox)</span>` : ""}<br>
+
+      <div class="badges">
+        <span class="badge">Estado contacto: ${estadoHtml}</span>
+        <span class="badge">Publicación: <strong>${pubTxt}</strong></span>
+        <span class="badge">💺 ${v.asientos ?? "-"}</span>
+        <span class="badge">💰 ${precioTxt}</span>
+      </div>
+
+      ${v.equipaje ? `<div class="muted">🧳 ${v.equipaje}</div>` : ""}
+      ${v.comentario ? `<div style="margin-top:6px;">📝 ${escapeHtml(v.comentario)}</div>` : ""}
+
+      <div style="margin-top:10px;">
+        <button onclick="hablarChofer(${c.id})">💬 Hablar con chofer</button>
+
+        ${pendiente ? `<button class="green" onclick="marcarGestionado(${c.id})">✔ Marcar gestionado</button>` : ""}
+
+        ${activo
+          ? `<button class="red" onclick="setActivo(${v.id}, false)">⏸ Pausar</button>`
+          : `<button class="green" onclick="setActivo(${v.id}, true)">▶ Reactivar</button>`
+        }
+
+        <button class="gray" onclick="toggleEdit(${v.id})">✏️ Editar viaje</button>
+      </div>
+
+      <div id="edit_${v.id}" style="display:none;">
+        <div class="hr"></div>
+
+        <div class="row">
+          <div>
+            <label class="muted">Fecha</label>
+            <input type="date" id="fecha_${v.id}" value="${toDateInputValue(v.fecha_hora)}">
+          </div>
+          <div>
+            <label class="muted">Hora</label>
+            <input type="time" id="hora_${v.id}" value="${toTimeInputValue(v.fecha_hora)}">
+          </div>
+        </div>
+
+        <label class="muted">
+          <input type="checkbox" id="aprox_${v.id}" ${v.hora_aprox ? "checked" : ""}>
+          Horario aproximado
+        </label>
+
+        <div class="row">
+          <div>
+            <label class="muted">Asientos libres</label>
+            <input type="number" min="0" id="asientos_${v.id}" value="${v.asientos ?? 0}">
+          </div>
+          <div>
+            <label class="muted">Precio</label>
+            <input type="number" min="0" id="precio_${v.id}" value="${v.precio ?? ""}" ${(v.precio === null || v.precio === undefined) ? "disabled" : ""}>
+            <label class="muted" style="display:block;margin-top:6px;">
+              <input type="checkbox" id="aconvenir_${v.id}" ${(v.precio === null || v.precio === undefined) ? "checked" : ""} onchange="
+                const p=document.getElementById('precio_${v.id}');
+                p.disabled=this.checked;
+                if(this.checked) p.value='';
+              ">
+              A convenir
+            </label>
+          </div>
+        </div>
+
+        <label class="muted">Equipaje</label>
+        <select id="equipaje_${v.id}">
+          <option value="" ${!v.equipaje ? "selected" : ""}>(sin especificar)</option>
+          <option value="mochila" ${v.equipaje==="mochila" ? "selected" : ""}>mochila</option>
+          <option value="bolso" ${v.equipaje==="bolso" ? "selected" : ""}>bolso</option>
+          <option value="valija" ${v.equipaje==="valija" ? "selected" : ""}>valija</option>
+          <option value="aconvenir" ${v.equipaje==="aconvenir" ? "selected" : ""}>a convenir</option>
+        </select>
+
+        <label class="muted">Detalles</label>
+        <textarea id="comentario_${v.id}" maxlength="220">${escapeHtml(v.comentario ?? "")}</textarea>
+
+        <button class="green" onclick="guardarEdicion(${v.id})">💾 Guardar cambios</button>
+      </div>
+    `;
+
+    cont.appendChild(div);
+  }
+}
+
+function escapeHtml(str) {
+  return (str || "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
+/* ===============================
+   ACCIONES
+================================ */
+function getContacto(id) {
+  return CONTACTOS_CACHE.find(x => x.id === id);
+}
+
+function hablarChofer(contactoId) {
+  const c = getContacto(contactoId);
+  const v = VIAJES_MAP.get(c.viaje_id);
+  if (!v) return;
+
+  const tel = limpiarTelefonoAR(v.telefono);
+  const fecha = fmtFecha(v.fecha_hora);
+  const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
+
   const mensaje = encodeURIComponent(
     `Hola! Te contacto por un viaje publicado en ComVi.\n\n` +
-    `${origen} → ${destino}\n` +
-    `Fecha y hora: ${fecha}\n\n` +
-    `Quedo atento, gracias.`
+    `${v.origen} → ${v.destino}\n` +
+    `Fecha y hora: ${fecha}${v.hora_aprox ? " (aprox)" : ""}\n` +
+    `Asientos libres: ${v.asientos ?? "-"}\n` +
+    `Precio: ${precioTxt}\n` +
+    `Detalles: ${v.comentario ?? "-"}\n\n` +
+    `ID viaje: ${v.id} · ID contacto: ${c.id}`
   );
+
   window.open(`https://wa.me/${tel}?text=${mensaje}`, "_blank");
 }
 
-// Marca gestionado a TODOS los contactos de un viaje
-async function marcarGestionadoPorViaje(viajeId) {
-  const { error } = await sb.from("contactos")
+async function marcarGestionado(contactoId) {
+  const { error } = await sb
+    .from("contactos")
     .update({ estado: "gestionado" })
-    .eq("viaje_id", viajeId)
-    .in("estado", ["nuevo","pendiente", null]); // por si hay null
+    .eq("id", contactoId);
 
-  if (error) { alert("Error actualizando contactos"); console.error(error); return; }
-  cargar();
+  if (error) {
+    alert("Error actualizando estado");
+    console.error(error);
+    return;
+  }
+
+  await cargarMetricas();
+  await cargarContactos();
 }
 
-// Pausar/Reactivar
-async function toggleActivo(viajeId, nuevoActivo) {
-  const { error } = await sb.from("viajes")
-    .update({ activo: nuevoActivo })
+async function setActivo(viajeId, activo) {
+  const { error } = await sb
+    .from("viajes")
+    .update({ activo })
     .eq("id", viajeId);
 
-  if (error) { alert("Error actualizando viaje"); console.error(error); return; }
-  cargar();
+  if (error) {
+    alert("Error actualizando publicación");
+    console.error(error);
+    return;
+  }
+
+  await cargarMetricas();
+  await cargarContactos();
 }
 
-// Guardar edición
+function toggleEdit(viajeId) {
+  const el = document.getElementById(`edit_${viajeId}`);
+  el.style.display = (el.style.display === "none") ? "block" : "none";
+}
+
 async function guardarEdicion(viajeId) {
   const fecha = document.getElementById(`fecha_${viajeId}`).value;
   const hora = document.getElementById(`hora_${viajeId}`).value;
-  const asientos = parseInt(document.getElementById(`asientos_${viajeId}`).value, 10) || null;
 
-  const precioAConvenir = document.getElementById(`aconvenir_${viajeId}`).checked;
-  const precio = precioAConvenir ? null : (parseInt(document.getElementById(`precio_${viajeId}`).value, 10) || null);
+  const horaAprox = document.getElementById(`aprox_${viajeId}`).checked;
+
+  const asientos = parseInt(document.getElementById(`asientos_${viajeId}`).value, 10);
+  const aConvenir = document.getElementById(`aconvenir_${viajeId}`).checked;
+  const precio = aConvenir ? null : (parseInt(document.getElementById(`precio_${viajeId}`).value, 10) || null);
 
   const equipaje = document.getElementById(`equipaje_${viajeId}`).value || null;
-  const horaAprox = document.getElementById(`aprox_${viajeId}`).checked;
   const comentario = document.getElementById(`comentario_${viajeId}`).value.trim() || null;
 
   if (!fecha || !hora) { alert("Completá fecha y hora"); return; }
-  if (!asientos || asientos < 1) { alert("Asientos inválidos"); return; }
+  if (Number.isNaN(asientos) || asientos < 0) { alert("Asientos inválidos"); return; }
   if (precio !== null && precio < 0) { alert("Precio inválido"); return; }
 
   const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
 
-  const { error } = await sb.from("viajes").update({
-    fecha_hora: fechaHoraISO,
-    asientos,
-    precio,
-    equipaje,
-    hora_aprox: horaAprox,
-    comentario
-  }).eq("id", viajeId);
+  const { error } = await sb
+    .from("viajes")
+    .update({
+      fecha_hora: fechaHoraISO,
+      hora_aprox: horaAprox,
+      asientos,
+      precio,
+      equipaje,
+      comentario
+    })
+    .eq("id", viajeId);
 
-  if (error) { alert("Error guardando cambios"); console.error(error); return; }
-  cargar();
-}
-
-function togglePanelEdicion(viajeId) {
-  const el = document.getElementById(`edit_${viajeId}`);
-  el.style.display = (el.style.display === "none" ? "block" : "none");
-}
-
-// Carga optimizada: contactos + viajes en lote
-async function cargar() {
-  const lista = document.getElementById("lista");
-  lista.innerHTML = `<div class="card">Cargando…</div>`;
-
-  const { data: contactos, error: errC } = await sb
-    .from("contactos")
-    .select("id, viaje_id, estado, created_at")
-    .order("created_at", { ascending: false });
-
-  if (errC) { alert("Error cargando contactos"); console.error(errC); return; }
-
-  // Agrupar por viaje_id
-  const map = new Map(); // viaje_id -> {total, pendientes, gestionados}
-  for (const c of (contactos || [])) {
-    const key = c.viaje_id;
-    if (!map.has(key)) map.set(key, { total: 0, pendientes: 0, gestionados: 0 });
-
-    const agg = map.get(key);
-    agg.total += 1;
-
-    const esPendiente = (c.estado === "pendiente" || c.estado === "nuevo" || c.estado === null);
-    if (esPendiente) agg.pendientes += 1;
-    else agg.gestionados += 1;
-  }
-
-  const viajeIds = Array.from(map.keys()).filter(x => x !== null && x !== undefined);
-  if (viajeIds.length === 0) {
-    lista.innerHTML = `<div class="card">No hay contactos todavía.</div>`;
+  if (error) {
+    alert("Error guardando cambios");
+    console.error(error);
     return;
   }
 
-  const { data: viajes, error: errV } = await sb
-    .from("viajes")
-    .select("*")
-    .in("id", viajeIds);
-
-  if (errV) { alert("Error cargando viajes"); console.error(errV); return; }
-
-  // Indexar viajes
-  const vIndex = new Map();
-  for (const v of (viajes || [])) vIndex.set(v.id, v);
-
-  // Render: orden por contacto más reciente (ya viene ordenado), pero sin repetir viajes
-  const renderOrden = [];
-  const seen = new Set();
-  for (const c of contactos) {
-    if (!seen.has(c.viaje_id) && vIndex.has(c.viaje_id)) {
-      seen.add(c.viaje_id);
-      renderOrden.push(c.viaje_id);
-    }
-  }
-
-  lista.innerHTML = "";
-
-  for (const viajeId of renderOrden) {
-    const v = vIndex.get(viajeId);
-    const agg = map.get(viajeId) || { total: 0, pendientes: 0, gestionados: 0 };
-
-    const activo = (v.activo === undefined || v.activo === null) ? true : !!v.activo;
-
-    const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
-    const chips = [];
-    if (v.asientos) chips.push(`💺 ${v.asientos} lugares`);
-    chips.push(`💰 ${precioTxt}`);
-    if (v.equipaje) chips.push(`🧳 ${v.equipaje}`);
-    if (v.hora_aprox) chips.push("🕒 aprox");
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <strong>${v.origen} → ${v.destino}</strong><br>
-      🕒 ${fmtFecha(v.fecha_hora)} ${v.hora_aprox ? '<span class="muted">(aprox)</span>' : ''}<br>
-
-      <div class="badges">
-        <span class="badge">Contactos: <strong>${agg.total}</strong></span>
-        <span class="badge">Pendientes: <strong>${agg.pendientes}</strong></span>
-        <span class="badge">Gestionados: <strong>${agg.gestionados}</strong></span>
-        <span class="badge">Publicación: <strong>${activo ? 'Activa' : 'Pausada'}</strong></span>
-      </div>
-
-      <div class="muted">${chips.join(" · ")}${v.comentario ? " · 📝 detalles" : ""}</div>
-
-      <button onclick="abrirWhatsappChofer('${v.telefono}','${v.origen}','${v.destino}','${v.fecha_hora}')">💬 Hablar con chofer</button>
-      <button class="green" onclick="marcarGestionadoPorViaje(${v.id})">✔ Marcar contactos gestionados</button>
-      <button class="gray" onclick="togglePanelEdicion(${v.id})">✏️ Editar</button>
-      ${activo
-        ? `<button class="red" onclick="toggleActivo(${v.id}, false)">⏸ Pausar</button>`
-        : `<button class="green" onclick="toggleActivo(${v.id}, true)">▶ Reactivar</button>`
-      }
-
-      <div id="edit_${v.id}" style="display:none;">
-        <div class="hr"></div>
-        <div class="row">
-          <div>
-            <label class="muted">Fecha</label>
-            <input id="fecha_${v.id}" type="date" value="${toDateInputValue(v.fecha_hora)}">
-          </div>
-          <div>
-            <label class="muted">Hora</label>
-            <input id="hora_${v.id}" type="time" value="${toTimeInputValue(v.fecha_hora)}">
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label class="muted">Asientos</label>
-            <input id="asientos_${v.id}" type="number" min="1" value="${v.asientos ?? 1}">
-          </div>
-          <div>
-            <label class="muted">Precio</label>
-            <input id="precio_${v.id}" type="number" min="0" value="${v.precio ?? ""}" ${v.precio === null ? "disabled" : ""}>
-            <div style="margin-top:6px;">
-              <label class="muted">
-                <input id="aconvenir_${v.id}" type="checkbox" ${v.precio === null ? "checked" : ""} onchange="
-                  const price=document.getElementById('precio_${v.id}');
-                  price.disabled=this.checked;
-                  if(this.checked) price.value='';
-                ">
-                A convenir
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label class="muted">Equipaje</label>
-            <select id="equipaje_${v.id}">
-              <option value="" ${!v.equipaje ? "selected" : ""}>-</option>
-              <option value="mochila" ${v.equipaje==="mochila" ? "selected" : ""}>mochila</option>
-              <option value="bolso" ${v.equipaje==="bolso" ? "selected" : ""}>bolso</option>
-              <option value="valija" ${v.equipaje==="valija" ? "selected" : ""}>valija</option>
-              <option value="aconvenir" ${v.equipaje==="aconvenir" ? "selected" : ""}>a convenir</option>
-            </select>
-          </div>
-          <div>
-            <label class="muted">Horario aprox</label>
-            <select id="aprox_${v.id}">
-              <option value="false" ${!v.hora_aprox ? "selected" : ""}>No</option>
-              <option value="true" ${v.hora_aprox ? "selected" : ""}>Sí</option>
-            </select>
-          </div>
-        </div>
-
-        <label class="muted">Detalles</label>
-        <textarea id="comentario_${v.id}">${v.comentario ?? ""}</textarea>
-
-        <button class="green" onclick="
-          // convertir select aprox a boolean
-          const sel=document.getElementById('aprox_${v.id}');
-          document.getElementById('aprox_${v.id}').checked = (sel.value==='true');
-        " style="display:none"></button>
-
-        <button class="green" onclick="
-          // hack: leer aprox select como boolean (sin tocar guardarEdicion)
-          const sel=document.getElementById('aprox_${v.id}');
-          const chk=document.createElement('input');
-          chk.type='checkbox'; chk.id='aprox_${v.id}'; chk.checked=(sel.value==='true');
-          sel.parentNode.replaceChild(chk, sel);
-          guardarEdicion(${v.id});
-        ">💾 Guardar cambios</button>
-      </div>
-    `;
-
-    lista.appendChild(card);
-  }
+  await cargarMetricas();
+  await cargarContactos();
 }
 
-cargar();
+/* ===============================
+   INIT
+================================ */
+(async function init() {
+  await cargarMetricas();
+  await cargarContactos();
+})();
 </script>
 
 </body>
