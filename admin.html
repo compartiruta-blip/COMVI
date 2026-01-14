@@ -6,173 +6,312 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
-  margin: 0;
-}
-header {
-  background: #222;
-  color: white;
-  padding: 12px;
-  text-align: center;
-}
-.card {
-  background: white;
-  margin: 10px;
-  padding: 12px;
-  border-radius: 8px;
-  box-shadow: 0 0 4px rgba(0,0,0,.1);
-}
-button {
-  padding: 8px 10px;
-  border: none;
-  border-radius: 6px;
-  background: #0d6efd;
-  color: white;
-  cursor: pointer;
-}
-.estado {
-  font-size: 12px;
-  color: #666;
-}
+  body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; }
+  header { background: #222; color: white; padding: 12px; text-align: center; }
+  .card {
+    background: white; margin: 10px; padding: 12px; border-radius: 8px;
+    box-shadow: 0 0 4px rgba(0,0,0,.1);
+  }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .muted { font-size: 12px; color:#666; }
+  .badges { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+  .badge { font-size:12px; padding:4px 8px; background:#f1f3f5; border-radius:999px; }
+  button {
+    padding: 8px 10px; border: none; border-radius: 6px;
+    background: #0d6efd; color: white; cursor: pointer; margin-right: 6px; margin-top: 6px;
+  }
+  button.green { background:#198754; }
+  button.gray { background:#6c757d; }
+  button.red { background:#dc3545; }
+  input, select, textarea {
+    width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;
+    margin:4px 0;
+  }
+  textarea { min-height: 70px; resize: vertical; }
+  .hr { height:1px; background:#eee; margin:10px 0; }
 </style>
 </head>
 
 <body>
-
 <header>
-  <h3>👁‍🗨 ComVi – Panel Admin</h3>
+  <h3 style="margin:0;">👁‍🗨 ComVi – Panel Admin</h3>
+  <div class="muted" style="color:#bbb;">Contactos, estado y edición de viajes</div>
 </header>
 
-<div id="listaContactos"></div>
+<div id="lista"></div>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-  console.log("ADMIN CARGADO");
-
-/* ===============================
-   SUPABASE (PROD)
-================================ */
 const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* ==========================
-       MARCAR GESTIONADO 
-====================== */
-  async function marcarGestionado(contactoId) {
-  const { error } = await sb
-    .from("contactos")
-    .update({ estado: "gestionado" })
-    .eq("id", contactoId);
-
-  if (error) {
-    alert("Error actualizando estado");
-    console.error(error);
-    return;
-  }
-
-  cargarContactos(); // refresca la lista
+function fmtFecha(fechaISO) {
+  return new Date(fechaISO).toLocaleString("es-AR", { dateStyle:"short", timeStyle:"short" });
 }
 
-/* ===============================
-   CARGAR CONTACTOS
-================================ */
-async function cargarContactos() {
-  const { data: contactos, error } = await sb
-    .from("contactos")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    alert("Error cargando contactos");
-    console.error(error);
-    return;
-  }
-
-  const cont = document.getElementById("listaContactos");
-  cont.innerHTML = "";
-
-  for (const c of contactos) {
-    const { data: viajes, error: errViaje } = await sb
-      .from("viajes")
-      .select("*")
-      .eq("id", c.viaje_id)
-      .limit(1);
-
-    if (errViaje || !viajes.length) continue;
-
-    const v = viajes[0];
-
-    const esPendiente = c.estado === "pendiente";
-    const estadoTexto = esPendiente ? "⏳ Pendiente" : "✔ Gestionado";
-
-    const div = document.createElement("div");
-    div.className = "card";
-
-    div.innerHTML = `
-      <strong>${v.origen} → ${v.destino}</strong><br>
-      🕒 ${new Date(v.fecha_hora).toLocaleString()}<br>
-      <span class="estado">Estado: ${estadoTexto}</span><br><br>
-
-      <button onclick="abrirWhatsapp('${v.telefono}', '${v.origen}', '${v.destino}', '${v.fecha_hora}')">
-        💬 Hablar con chofer
-      </button>
-
-      ${
-        esPendiente
-          ? `<button onclick="marcarGestionado('${c.id}')"
-                     style="background:#198754;margin-left:6px;">
-               ✔ Marcar gestionado
-             </button>`
-          : ""
-      }
-    `;
-
-    cont.appendChild(div);
-  }
+function toDateInputValue(fechaISO) {
+  const d = new Date(fechaISO);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+function toTimeInputValue(fechaISO) {
+  const d = new Date(fechaISO);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${hh}:${mi}`;
 }
 
-/* ===============================
-   WHATSAPP
-================================ */
-function abrirWhatsapp(telefono, origen, destino, fechaHora) {
-  // limpiar todo lo que no sea número
-  let tel = telefono.replace(/\D/g, "");
+function limpiarTelefonoAR(telefono) {
+  let tel = (telefono || "").toString().replace(/\D/g, "");
+  if (tel.startsWith("0")) tel = tel.substring(1);
+  if (!tel.startsWith("54")) tel = "54" + tel;
+  if (!tel.startsWith("549")) tel = tel.replace(/^54/, "549");
+  return tel;
+}
 
-  // si empieza con 0 (ej: 011...), lo sacamos
-  if (tel.startsWith("0")) {
-    tel = tel.substring(1);
-  }
-
-  // si no tiene código país, asumimos Argentina
-  if (!tel.startsWith("54")) {
-    tel = "54" + tel;
-  }
-
-  // si no tiene el 9 móvil argentino, lo agregamos
-  if (!tel.startsWith("549")) {
-    tel = tel.replace(/^54/, "549");
-  }
-
-  const fecha = new Date(fechaHora).toLocaleString("es-AR");
-
+function abrirWhatsappChofer(telefono, origen, destino, fechaHora) {
+  const tel = limpiarTelefonoAR(telefono);
+  const fecha = fmtFecha(fechaHora);
   const mensaje = encodeURIComponent(
     `Hola! Te contacto por un viaje publicado en ComVi.\n\n` +
     `${origen} → ${destino}\n` +
     `Fecha y hora: ${fecha}\n\n` +
     `Quedo atento, gracias.`
   );
-
-  window.open(
-    `https://wa.me/${tel}?text=${mensaje}`,
-    "_blank"
-  );
+  window.open(`https://wa.me/${tel}?text=${mensaje}`, "_blank");
 }
 
+// Marca gestionado a TODOS los contactos de un viaje
+async function marcarGestionadoPorViaje(viajeId) {
+  const { error } = await sb.from("contactos")
+    .update({ estado: "gestionado" })
+    .eq("viaje_id", viajeId)
+    .in("estado", ["nuevo","pendiente", null]); // por si hay null
 
-cargarContactos();
+  if (error) { alert("Error actualizando contactos"); console.error(error); return; }
+  cargar();
+}
+
+// Pausar/Reactivar
+async function toggleActivo(viajeId, nuevoActivo) {
+  const { error } = await sb.from("viajes")
+    .update({ activo: nuevoActivo })
+    .eq("id", viajeId);
+
+  if (error) { alert("Error actualizando viaje"); console.error(error); return; }
+  cargar();
+}
+
+// Guardar edición
+async function guardarEdicion(viajeId) {
+  const fecha = document.getElementById(`fecha_${viajeId}`).value;
+  const hora = document.getElementById(`hora_${viajeId}`).value;
+  const asientos = parseInt(document.getElementById(`asientos_${viajeId}`).value, 10) || null;
+
+  const precioAConvenir = document.getElementById(`aconvenir_${viajeId}`).checked;
+  const precio = precioAConvenir ? null : (parseInt(document.getElementById(`precio_${viajeId}`).value, 10) || null);
+
+  const equipaje = document.getElementById(`equipaje_${viajeId}`).value || null;
+  const horaAprox = document.getElementById(`aprox_${viajeId}`).checked;
+  const comentario = document.getElementById(`comentario_${viajeId}`).value.trim() || null;
+
+  if (!fecha || !hora) { alert("Completá fecha y hora"); return; }
+  if (!asientos || asientos < 1) { alert("Asientos inválidos"); return; }
+  if (precio !== null && precio < 0) { alert("Precio inválido"); return; }
+
+  const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
+
+  const { error } = await sb.from("viajes").update({
+    fecha_hora: fechaHoraISO,
+    asientos,
+    precio,
+    equipaje,
+    hora_aprox: horaAprox,
+    comentario
+  }).eq("id", viajeId);
+
+  if (error) { alert("Error guardando cambios"); console.error(error); return; }
+  cargar();
+}
+
+function togglePanelEdicion(viajeId) {
+  const el = document.getElementById(`edit_${viajeId}`);
+  el.style.display = (el.style.display === "none" ? "block" : "none");
+}
+
+// Carga optimizada: contactos + viajes en lote
+async function cargar() {
+  const lista = document.getElementById("lista");
+  lista.innerHTML = `<div class="card">Cargando…</div>`;
+
+  const { data: contactos, error: errC } = await sb
+    .from("contactos")
+    .select("id, viaje_id, estado, created_at")
+    .order("created_at", { ascending: false });
+
+  if (errC) { alert("Error cargando contactos"); console.error(errC); return; }
+
+  // Agrupar por viaje_id
+  const map = new Map(); // viaje_id -> {total, pendientes, gestionados}
+  for (const c of (contactos || [])) {
+    const key = c.viaje_id;
+    if (!map.has(key)) map.set(key, { total: 0, pendientes: 0, gestionados: 0 });
+
+    const agg = map.get(key);
+    agg.total += 1;
+
+    const esPendiente = (c.estado === "pendiente" || c.estado === "nuevo" || c.estado === null);
+    if (esPendiente) agg.pendientes += 1;
+    else agg.gestionados += 1;
+  }
+
+  const viajeIds = Array.from(map.keys()).filter(x => x !== null && x !== undefined);
+  if (viajeIds.length === 0) {
+    lista.innerHTML = `<div class="card">No hay contactos todavía.</div>`;
+    return;
+  }
+
+  const { data: viajes, error: errV } = await sb
+    .from("viajes")
+    .select("*")
+    .in("id", viajeIds);
+
+  if (errV) { alert("Error cargando viajes"); console.error(errV); return; }
+
+  // Indexar viajes
+  const vIndex = new Map();
+  for (const v of (viajes || [])) vIndex.set(v.id, v);
+
+  // Render: orden por contacto más reciente (ya viene ordenado), pero sin repetir viajes
+  const renderOrden = [];
+  const seen = new Set();
+  for (const c of contactos) {
+    if (!seen.has(c.viaje_id) && vIndex.has(c.viaje_id)) {
+      seen.add(c.viaje_id);
+      renderOrden.push(c.viaje_id);
+    }
+  }
+
+  lista.innerHTML = "";
+
+  for (const viajeId of renderOrden) {
+    const v = vIndex.get(viajeId);
+    const agg = map.get(viajeId) || { total: 0, pendientes: 0, gestionados: 0 };
+
+    const activo = (v.activo === undefined || v.activo === null) ? true : !!v.activo;
+
+    const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
+    const chips = [];
+    if (v.asientos) chips.push(`💺 ${v.asientos} lugares`);
+    chips.push(`💰 ${precioTxt}`);
+    if (v.equipaje) chips.push(`🧳 ${v.equipaje}`);
+    if (v.hora_aprox) chips.push("🕒 aprox");
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <strong>${v.origen} → ${v.destino}</strong><br>
+      🕒 ${fmtFecha(v.fecha_hora)} ${v.hora_aprox ? '<span class="muted">(aprox)</span>' : ''}<br>
+
+      <div class="badges">
+        <span class="badge">Contactos: <strong>${agg.total}</strong></span>
+        <span class="badge">Pendientes: <strong>${agg.pendientes}</strong></span>
+        <span class="badge">Gestionados: <strong>${agg.gestionados}</strong></span>
+        <span class="badge">Publicación: <strong>${activo ? 'Activa' : 'Pausada'}</strong></span>
+      </div>
+
+      <div class="muted">${chips.join(" · ")}${v.comentario ? " · 📝 detalles" : ""}</div>
+
+      <button onclick="abrirWhatsappChofer('${v.telefono}','${v.origen}','${v.destino}','${v.fecha_hora}')">💬 Hablar con chofer</button>
+      <button class="green" onclick="marcarGestionadoPorViaje(${v.id})">✔ Marcar contactos gestionados</button>
+      <button class="gray" onclick="togglePanelEdicion(${v.id})">✏️ Editar</button>
+      ${activo
+        ? `<button class="red" onclick="toggleActivo(${v.id}, false)">⏸ Pausar</button>`
+        : `<button class="green" onclick="toggleActivo(${v.id}, true)">▶ Reactivar</button>`
+      }
+
+      <div id="edit_${v.id}" style="display:none;">
+        <div class="hr"></div>
+        <div class="row">
+          <div>
+            <label class="muted">Fecha</label>
+            <input id="fecha_${v.id}" type="date" value="${toDateInputValue(v.fecha_hora)}">
+          </div>
+          <div>
+            <label class="muted">Hora</label>
+            <input id="hora_${v.id}" type="time" value="${toTimeInputValue(v.fecha_hora)}">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label class="muted">Asientos</label>
+            <input id="asientos_${v.id}" type="number" min="1" value="${v.asientos ?? 1}">
+          </div>
+          <div>
+            <label class="muted">Precio</label>
+            <input id="precio_${v.id}" type="number" min="0" value="${v.precio ?? ""}" ${v.precio === null ? "disabled" : ""}>
+            <div style="margin-top:6px;">
+              <label class="muted">
+                <input id="aconvenir_${v.id}" type="checkbox" ${v.precio === null ? "checked" : ""} onchange="
+                  const price=document.getElementById('precio_${v.id}');
+                  price.disabled=this.checked;
+                  if(this.checked) price.value='';
+                ">
+                A convenir
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label class="muted">Equipaje</label>
+            <select id="equipaje_${v.id}">
+              <option value="" ${!v.equipaje ? "selected" : ""}>-</option>
+              <option value="mochila" ${v.equipaje==="mochila" ? "selected" : ""}>mochila</option>
+              <option value="bolso" ${v.equipaje==="bolso" ? "selected" : ""}>bolso</option>
+              <option value="valija" ${v.equipaje==="valija" ? "selected" : ""}>valija</option>
+              <option value="aconvenir" ${v.equipaje==="aconvenir" ? "selected" : ""}>a convenir</option>
+            </select>
+          </div>
+          <div>
+            <label class="muted">Horario aprox</label>
+            <select id="aprox_${v.id}">
+              <option value="false" ${!v.hora_aprox ? "selected" : ""}>No</option>
+              <option value="true" ${v.hora_aprox ? "selected" : ""}>Sí</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="muted">Detalles</label>
+        <textarea id="comentario_${v.id}">${v.comentario ?? ""}</textarea>
+
+        <button class="green" onclick="
+          // convertir select aprox a boolean
+          const sel=document.getElementById('aprox_${v.id}');
+          document.getElementById('aprox_${v.id}').checked = (sel.value==='true');
+        " style="display:none"></button>
+
+        <button class="green" onclick="
+          // hack: leer aprox select como boolean (sin tocar guardarEdicion)
+          const sel=document.getElementById('aprox_${v.id}');
+          const chk=document.createElement('input');
+          chk.type='checkbox'; chk.id='aprox_${v.id}'; chk.checked=(sel.value==='true');
+          sel.parentNode.replaceChild(chk, sel);
+          guardarEdicion(${v.id});
+        ">💾 Guardar cambios</button>
+      </div>
+    `;
+
+    lista.appendChild(card);
+  }
+}
+
+cargar();
 </script>
 
 </body>
