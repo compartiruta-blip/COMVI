@@ -187,8 +187,17 @@ async function cargarContactos() {
 /* ===============================
    ACCIONES
 ================================ */
+
 function getContacto(id) {
   return CONTACTOS_CACHE.find(x => x.id === id);
+}
+
+// link para que el chofer gestione el viaje
+function getChoferManageLink(v) {
+  // arma el link relativo en la misma carpeta del sitio
+  const url = new URL("chofer.html", window.location.href);
+  url.searchParams.set("edit_token", v.edit_token || "");
+  return url.toString();
 }
 
 function hablarChofer(contactoId) {
@@ -205,8 +214,17 @@ function hablarChofer(contactoId) {
     return;
   }
 
+  // ✅ sin token no hay link de gestión
+  if (!v.edit_token) {
+    console.error("Viaje sin edit_token:", v);
+    alert("Este viaje no tiene edit_token. Revisá que se guarde al publicar.");
+    return;
+  }
+
   const fecha = fmtFecha(v.fecha_hora);
   const precioTxt = (v.precio === null || v.precio === undefined) ? "A convenir" : `$${v.precio}`;
+
+  const linkChofer = getChoferManageLink(v);
 
   const texto =
     "Hola! Te contacto por un viaje publicado en ComVi.\n\n" +
@@ -215,7 +233,10 @@ function hablarChofer(contactoId) {
     `Asientos libres: ${v.asientos ?? "-"}\n` +
     `Precio: ${precioTxt}\n` +
     `Detalles: ${v.comentario ?? "-"}\n\n` +
-    `ID viaje: ${v.id} - ID contacto: ${c.id}`;
+    "Gestion del viaje (link):\n" +
+    `${linkChofer}\n\n` +
+    `ID viaje: ${v.id}\n` +
+    `ID contacto: ${c.id}`;
 
   const url = `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
   const w = window.open(url, "_blank");
@@ -237,6 +258,7 @@ async function marcarGestionado(contactoId) {
   await cargarMetricas();
   await cargarContactos();
 }
+
 function renderContactos() {
   const cont = document.getElementById("listaContactos");
   cont.innerHTML = "";
