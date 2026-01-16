@@ -1,3 +1,6 @@
+<!-- =========================
+     admin.html (CORREGIDO)
+     ========================= -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -63,6 +66,23 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
 /* ===============================
+   GATE ADMIN (PIN SIMPLE MVP)
+   Nota: no es seguridad real; baja riesgo casual.
+================================ */
+(function gateAdmin() {
+  const ok = localStorage.getItem("comvi_admin_ok");
+  if (ok === "1") return;
+
+  const pin = prompt("Admin PIN:");
+  // CAMBIÁ ESTE PIN
+  if (pin !== "1234") {
+    document.body.innerHTML = "<div style='padding:16px;font-family:Arial'>Acceso denegado</div>";
+    throw new Error("No autorizado");
+  }
+  localStorage.setItem("comvi_admin_ok", "1");
+})();
+
+/* ===============================
    SUPABASE
 ================================ */
 const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
@@ -71,6 +91,19 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let CONTACTOS_CACHE = [];
 let VIAJES_MAP = new Map(); // id -> viaje
+
+/* ===============================
+   FECHA LOCAL (evita corrimientos)
+================================ */
+function toLocalISOString(dateStr, timeStr) {
+  const d = new Date(`${dateStr}T${timeStr}:00`);
+  const pad = n => String(n).padStart(2, "0");
+  const tz = -d.getTimezoneOffset(); // minutes
+  const sign = tz >= 0 ? "+" : "-";
+  const hh = pad(Math.floor(Math.abs(tz) / 60));
+  const mm = pad(Math.abs(tz) % 60);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00${sign}${hh}:${mm}`;
+}
 
 function fmtFecha(fechaISO) {
   return new Date(fechaISO).toLocaleString("es-AR", { dateStyle:"short", timeStyle:"short" });
@@ -194,15 +227,11 @@ function getContacto(id) {
 
 // link para que el chofer gestione el viaje
 function getChoferManageLink(v) {
-  // base del folder del proyecto (ej: /COMVI/)
-  const basePath = window.location.pathname.split("/").slice(0, -1).join("/");
-
+  const base = window.location.href.replace(/admin\.html.*$/,"");
   const viaje = encodeURIComponent(v.id);
   const token = encodeURIComponent(v.edit_token || "");
-
-  return `${window.location.origin}${basePath}/chofer.html?viaje=${viaje}&token=${token}`;
+  return `${base}chofer.html?viaje=${viaje}&token=${token}`;
 }
-
 
 function hablarChofer(contactoId) {
   const c = getContacto(contactoId);
@@ -218,7 +247,6 @@ function hablarChofer(contactoId) {
     return;
   }
 
-  // ✅ sin token no hay link de gestión
   if (!v.edit_token) {
     console.error("Viaje sin edit_token:", v);
     alert("Este viaje no tiene edit_token. Revisá que se guarde al publicar.");
@@ -240,7 +268,6 @@ function hablarChofer(contactoId) {
     "Gestion del viaje (link):\n" +
     `${linkChofer}\n\n` +
     `ID viaje: ${v.id} - ID contacto: ${c.id}`;
-
 
   const url = `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
   const w = window.open(url, "_blank");
@@ -316,6 +343,7 @@ function renderContactos() {
         }
 
         <button class="gray" onclick="toggleEdit('${v.id}')">Editar viaje</button>
+        <button class="gray" onclick="marcarCompletado('${v.id}')">✅ Viaje completado</button>
       </div>
 
       <div id="edit_${v.id}" style="display:none;">
@@ -366,7 +394,7 @@ function renderContactos() {
         </select>
 
         <label class="muted">Detalles</label>
-        <textarea id="comentario_${v.id}" maxlength="220">${escapeHtml(v.comentario ?? "")}</textarea>
+        <textarea id="comentario_${v.id}" maxlength="220">${(v.comentario ?? "").replace(/<\/textarea>/gi,"")}</textarea>
 
         <button class="green" onclick="guardarEdicion('${v.id}')">Guardar cambios</button>
       </div>
@@ -377,10 +405,14 @@ function renderContactos() {
 }
 
 async function setActivo(viajeId, activo) {
+  const v = VIAJES_MAP.get(viajeId);
+  if (!v) { alert("Viaje no encontrado"); return; }
+
   const { error } = await sb
     .from("viajes")
     .update({ activo })
-    .eq("id", viajeId);
+    .eq("id", viajeId)
+    .eq("edit_token", v.edit_token);
 
   if (error) {
     alert("Error actualizando publicacion");
@@ -392,12 +424,21 @@ async function setActivo(viajeId, activo) {
   await cargarContactos();
 }
 
+async function marcarCompletado(viajeId) {
+  const ok = confirm("¿Marcar viaje como completado y ocultarlo?");
+  if (!ok) return;
+  await setActivo(viajeId, false);
+}
+
 function toggleEdit(viajeId) {
   const el = document.getElementById(`edit_${viajeId}`);
   el.style.display = (el.style.display === "none") ? "block" : "none";
 }
 
 async function guardarEdicion(viajeId) {
+  const v = VIAJES_MAP.get(viajeId);
+  if (!v) { alert("Viaje no encontrado"); return; }
+
   const fecha = document.getElementById(`fecha_${viajeId}`).value;
   const hora = document.getElementById(`hora_${viajeId}`).value;
 
@@ -414,7 +455,7 @@ async function guardarEdicion(viajeId) {
   if (Number.isNaN(asientos) || asientos < 0) { alert("Asientos invalidos"); return; }
   if (precio !== null && precio < 0) { alert("Precio invalido"); return; }
 
-  const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
+  const fechaHoraISO = toLocalISOString(fecha, hora);
 
   const { error } = await sb
     .from("viajes")
@@ -426,7 +467,8 @@ async function guardarEdicion(viajeId) {
       equipaje,
       comentario
     })
-    .eq("id", viajeId);
+    .eq("id", viajeId)
+    .eq("edit_token", v.edit_token);
 
   if (error) {
     alert("Error guardando cambios");
