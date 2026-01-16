@@ -1,3 +1,6 @@
+<!-- =========================
+     index.html (CORREGIDO)
+     ========================= -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -47,6 +50,27 @@
       margin: 6px 0;
     }
     .inlineCheck input { width:auto; margin-top:2px; }
+
+    .manageLinkBox{
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:10px;
+      padding:10px;
+      margin-top:10px;
+      display:none;
+    }
+    .manageLinkBox code{
+      display:block;
+      background:#f6f8fa;
+      padding:10px;
+      border-radius:8px;
+      overflow:auto;
+      word-break:break-all;
+    }
+    .btnCopy{
+      margin-top:8px;
+      background:#198754;
+    }
   </style>
 </head>
 
@@ -117,6 +141,17 @@
 
   <button type="button" onclick="publicarViaje()">Publicar</button>
   <div class="muted">Tip: facilitá detalles en “Detalles”. Ganamos todos 🙌</div>
+
+  <!-- Link de gestión chofer -->
+  <div class="manageLinkBox" id="manageLinkBox">
+    <strong>✅ Publicación creada</strong>
+    <div class="muted" style="margin-top:4px;">
+      Guardá este link para <strong>gestionar tu viaje</strong> (asientos / pausar / editar).
+    </div>
+    <code id="manageLink"></code>
+    <button class="btnCopy" type="button" onclick="copiarLink()">📋 Copiar link</button>
+    <div class="muted" id="copyMsg" style="margin-top:6px;"></div>
+  </div>
 </section>
 
 <!-- DONACIÓN -->
@@ -168,6 +203,19 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const telefonoAdmin = "5491158025832";
 
 let VIAJES_CACHE = [];
+
+/* ===============================
+   FECHA LOCAL (evita corrimientos)
+================================ */
+function toLocalISOString(dateStr, timeStr) {
+  const d = new Date(`${dateStr}T${timeStr}:00`);
+  const pad = n => String(n).padStart(2, "0");
+  const tz = -d.getTimezoneOffset(); // minutes
+  const sign = tz >= 0 ? "+" : "-";
+  const hh = pad(Math.floor(Math.abs(tz) / 60));
+  const mm = pad(Math.abs(tz) % 60);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00${sign}${hh}:${mm}`;
+}
 
 /* ===============================
    HELPERS
@@ -276,7 +324,6 @@ function renderViajes() {
         completo = true;
       }
     } else {
-      // si no hay dato, lo tratamos como no-contactable
       chips.push(`💺 (sin dato)`);
       completo = true;
     }
@@ -311,7 +358,6 @@ function renderViajes() {
     contenedor.appendChild(div);
   });
 }
-
 
 /* ===============================
    CONTACTO (admin intermediario)
@@ -352,6 +398,27 @@ ID publicación: ${v?.id}`;
 }
 
 /* ===============================
+   LINK DE GESTIÓN (chofer)
+================================ */
+function baseDirUrl() {
+  // remove filename (index.html) if present
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.search = "";
+  url.pathname = url.pathname.replace(/\/[^\/]*$/, "/");
+  return url.toString().replace(/\/$/, "");
+}
+async function copiarLink() {
+  const link = document.getElementById("manageLink").innerText;
+  try {
+    await navigator.clipboard.writeText(link);
+    document.getElementById("copyMsg").innerText = "Link copiado ✅";
+  } catch (e) {
+    document.getElementById("copyMsg").innerText = "No pude copiar (tu navegador bloqueó). Copialo manualmente.";
+  }
+}
+
+/* ===============================
    PUBLICAR VIAJE
 ================================ */
 async function publicarViaje() {
@@ -383,28 +450,33 @@ async function publicarViaje() {
     return;
   }
 
-  // unir fecha + hora en ISO válido
-  const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
+  // ✅ fecha/hora local con offset (evita corrimientos)
+  const fechaHoraISO = toLocalISOString(fecha, hora);
 
   // ✅ token privado de edición para el chofer
   const editToken = crypto.randomUUID();
 
-  const { error } = await sb
+  const payload = {
+    origen,
+    destino,
+    fecha_hora: fechaHoraISO,
+    telefono,
+    tipo: "chofer",
+    asientos,
+    precio,
+    equipaje,
+    hora_aprox: horaAprox,
+    comentario: detalles,
+    punto_encuentro: null,
+    activo: true,
+    edit_token: editToken
+  };
+
+  const { data, error } = await sb
     .from("viajes")
-    .insert([{
-      origen,
-      destino,
-      fecha_hora: fechaHoraISO,
-      telefono,
-      asientos,
-      precio,
-      equipaje,
-      hora_aprox: horaAprox,
-      comentario: detalles,
-      punto_encuentro: null,
-      activo: true,
-      edit_token: editToken
-    }]);
+    .insert([payload])
+    .select("id")
+    .single();
 
   if (error) {
     console.error("SUPABASE ERROR:", error);
@@ -412,13 +484,32 @@ async function publicarViaje() {
     return;
   }
 
-  // (opcional) por ahora mostramos el token para test rápido
-  // después lo sacamos y lo manejás desde admin
-  console.log("EDIT TOKEN:", editToken);
-
   alert("Viaje publicado ✅");
 
+  // mostrar link de gestión
+  const id = data?.id;
+  if (id) {
+    const link = `${baseDirUrl()}/chofer.html?viaje=${encodeURIComponent(id)}&token=${encodeURIComponent(editToken)}`;
+    document.getElementById("manageLink").innerText = link;
+    document.getElementById("manageLinkBox").style.display = "block";
+    document.getElementById("copyMsg").innerText = "";
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  }
+
+  // limpiar formulario completo
+  document.getElementById("origen").value = "";
+  document.getElementById("destino").value = "";
+  document.getElementById("fecha").value = "";
+  document.getElementById("hora").value = "";
+  document.getElementById("horaAprox").checked = false;
+  document.getElementById("asientos").value = "";
+  document.getElementById("precioAConvenir").checked = false;
+  document.getElementById("precio").value = "";
+  document.getElementById("equipaje").value = "";
   document.getElementById("detalles").value = "";
+  document.getElementById("telefono").value = "";
+
+  setupPrecioAConvenir();
   mostrarViajes();
 }
 
