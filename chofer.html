@@ -1,3 +1,6 @@
+<!-- =========================
+     chofer.html (CORREGIDO)
+     ========================= -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -24,6 +27,7 @@
     button.gray { background:#6c757d; }
     button.green { background:#198754; }
     button.red { background:#dc3545; }
+    button:disabled { background:#adb5bd; cursor:not-allowed; }
     .pillbar { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .pill { background:#f1f3f5; padding:6px 10px; border-radius:999px; font-size:12px; }
     .inlineCheck {
@@ -55,8 +59,8 @@
     <div class="muted" style="margin-top:6px;">ID: <span id="viajeId"></span> · Publicación: <strong id="pubEstado"></strong></div>
 
     <div style="margin-top:10px;" class="actions">
-      <button class="gray" onclick="cambiarAsientos(-1)">reserva asiento</button>
-      <button class="gray" onclick="cambiarAsientos(1)">libera asiento</button>
+      <button class="gray" id="btnRes" onclick="cambiarAsientos(-1)">➖ Reservaron 1 asiento</button>
+      <button class="gray" onclick="cambiarAsientos(1)">➕ Se liberó 1 asiento</button>
       <button id="btnToggleActivo" class="red" onclick="toggleActivo()">⏸ Pausar</button>
     </div>
 
@@ -113,7 +117,7 @@
     <label class="muted">Detalles</label>
     <textarea id="detalles" maxlength="220" placeholder="Punto de encuentro, paradas, equipaje, etc."></textarea>
 
-    <button class="green" onclick="guardarCambios()">💾 Guardar cambios</button>
+    <button class="green" id="btnSave" onclick="guardarCambios()">💾 Guardar cambios</button>
     <div class="muted" id="saveMsg" style="margin-top:6px;"></div>
   </div>
 
@@ -129,6 +133,19 @@ let VIAJE = null;
 
 function qs(name) {
   return new URLSearchParams(window.location.search).get(name);
+}
+
+/* ===============================
+   FECHA LOCAL (evita corrimientos)
+================================ */
+function toLocalISOString(dateStr, timeStr) {
+  const d = new Date(`${dateStr}T${timeStr}:00`);
+  const pad = n => String(n).padStart(2, "0");
+  const tz = -d.getTimezoneOffset(); // minutes
+  const sign = tz >= 0 ? "+" : "-";
+  const hh = pad(Math.floor(Math.abs(tz) / 60));
+  const mm = pad(Math.abs(tz) % 60);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00${sign}${hh}:${mm}`;
 }
 
 function fmtFecha(fechaISO) {
@@ -177,7 +194,7 @@ async function cargarViaje() {
 
   setStatus(`Cargando viaje…`);
 
-  // ⚠️ Para MVP: validamos por id + token
+  // Para MVP: validamos por id + token
   const { data, error } = await sb
     .from("viajes")
     .select("*")
@@ -224,6 +241,11 @@ function render() {
   const pillbar = document.getElementById("pills");
   pillbar.innerHTML = pills.map(p => `<span class="pill">${p}</span>`).join("");
 
+  // Botón reserva: deshabilitar si ya está en 0
+  const btnRes = document.getElementById("btnRes");
+  const seats = parseInt(VIAJE.asientos ?? 0, 10);
+  btnRes.disabled = seats <= 0;
+
   // Form edición
   document.getElementById("fecha").value = toDateInputValue(VIAJE.fecha_hora);
   document.getElementById("hora").value = toTimeInputValue(VIAJE.fecha_hora);
@@ -244,13 +266,16 @@ function render() {
 
 async function cambiarAsientos(delta) {
   if (!VIAJE) return;
+  const token = qs("token");
+
   const actual = parseInt(VIAJE.asientos ?? 0, 10);
   const nuevo = Math.max(0, actual + delta);
 
   const { error } = await sb
     .from("viajes")
     .update({ asientos: nuevo })
-    .eq("id", VIAJE.id);
+    .eq("id", VIAJE.id)
+    .eq("edit_token", token);
 
   if (error) {
     alert("Error actualizando asientos");
@@ -264,13 +289,16 @@ async function cambiarAsientos(delta) {
 
 async function toggleActivo() {
   if (!VIAJE) return;
+  const token = qs("token");
+
   const activo = (VIAJE.activo === undefined || VIAJE.activo === null) ? true : !!VIAJE.activo;
   const nuevo = !activo;
 
   const { error } = await sb
     .from("viajes")
     .update({ activo: nuevo })
-    .eq("id", VIAJE.id);
+    .eq("id", VIAJE.id)
+    .eq("edit_token", token);
 
   if (error) {
     alert("Error actualizando publicación");
@@ -284,6 +312,11 @@ async function toggleActivo() {
 
 async function guardarCambios() {
   if (!VIAJE) return;
+  const token = qs("token");
+
+  const btnSave = document.getElementById("btnSave");
+  btnSave.disabled = true;
+  btnSave.textContent = "Guardando…";
 
   const fecha = document.getElementById("fecha").value;
   const hora = document.getElementById("hora").value;
@@ -296,11 +329,11 @@ async function guardarCambios() {
   const equipaje = document.getElementById("equipaje").value || null;
   const detalles = document.getElementById("detalles").value.trim() || null;
 
-  if (!fecha || !hora) { alert("Completá fecha y hora"); return; }
-  if (Number.isNaN(asientos) || asientos < 0) { alert("Asientos inválidos"); return; }
-  if (precio !== null && precio < 0) { alert("Precio inválido"); return; }
+  if (!fecha || !hora) { alert("Completá fecha y hora"); btnSave.disabled=false; btnSave.textContent="💾 Guardar cambios"; return; }
+  if (Number.isNaN(asientos) || asientos < 0) { alert("Asientos inválidos"); btnSave.disabled=false; btnSave.textContent="💾 Guardar cambios"; return; }
+  if (precio !== null && precio < 0) { alert("Precio inválido"); btnSave.disabled=false; btnSave.textContent="💾 Guardar cambios"; return; }
 
-  const fechaHoraISO = new Date(`${fecha}T${hora}`).toISOString();
+  const fechaHoraISO = toLocalISOString(fecha, hora);
 
   const payload = {
     fecha_hora: fechaHoraISO,
@@ -314,7 +347,11 @@ async function guardarCambios() {
   const { error } = await sb
     .from("viajes")
     .update(payload)
-    .eq("id", VIAJE.id);
+    .eq("id", VIAJE.id)
+    .eq("edit_token", token);
+
+  btnSave.disabled = false;
+  btnSave.textContent = "💾 Guardar cambios";
 
   if (error) {
     alert("Error guardando cambios");
@@ -322,13 +359,9 @@ async function guardarCambios() {
     return;
   }
 
-  // actualizar cache local
   VIAJE = { ...VIAJE, ...payload };
-
-  // primero render, después mensaje (así no lo borra)
   render();
   document.getElementById("saveMsg").innerText = "Guardado ✅";
-
 }
 
 window.addEventListener("load", () => {
