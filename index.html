@@ -1,5 +1,5 @@
 <!-- =========================
-     index.html (CORREGIDO)
+     index.html (MICROTEXTOS + CORRECCIONES, SIN NUEVA LÓGICA)
      ========================= -->
 <!DOCTYPE html>
 <html lang="es">
@@ -71,6 +71,32 @@
       margin-top:8px;
       background:#198754;
     }
+
+    .topActions{
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      margin-top:8px;
+      flex-wrap:wrap;
+    }
+    .topActions a{
+      display:inline-block;
+      background: rgba(255,255,255,.15);
+      color:#fff;
+      text-decoration:none;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+    }
+
+    .infoBox{
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:10px;
+      padding:10px;
+      margin: 10px 12px 0;
+      font-size:13px;
+    }
   </style>
 </head>
 
@@ -83,6 +109,11 @@
       <div style="font-size:12px;opacity:.9;">Carpooling comunitario</div>
     </div>
   </div>
+
+  <div class="topActions">
+    <a href="mailto:admcomvi@gmail.com">📢 Anunciar</a>
+    <a href="https://link.mercadopago.com.ar/donacomvi" target="_blank">❤️ Donar</a>
+  </div>
 </header>
 
 <!-- PUBLICIDAD SUPERIOR -->
@@ -92,7 +123,7 @@
 </div>
 
 <section>
-  <h3>📍 Publicar viaje (chofer)</h3>
+  <h3>📍 Publicar viaje (conductor)</h3>
 
   <div class="row">
     <input type="text" id="origen" placeholder="Origen (ej: CABA / La Plata)">
@@ -135,18 +166,18 @@
   </select>
 
   <textarea id="detalles" maxlength="220"
-    placeholder="📝 Detalles (punto de encuentro, paradas, equipaje, etc.) máx 220"></textarea>
+    placeholder="📝 Detalles (punto de encuentro, paradas, equipaje, música, etc.) máx 220"></textarea>
 
-  <input type="tel" id="telefono" placeholder="Teléfono de contacto (por ahora admin intermedia)" inputmode="numeric">
+  <input type="tel" id="telefono" placeholder="WhatsApp del conductor (no se publica). El admin te conecta." inputmode="numeric">
 
-  <button type="button" onclick="publicarViaje()">Publicar</button>
-  <div class="muted">Tip: facilitá detalles en “Detalles”. Ganamos todos 🙌</div>
+  <button type="button" onclick="publicarViaje()">Publicar viaje</button>
+  <div class="muted">Al publicar, te damos un <strong>link privado</strong> para gestionar asientos, pausar y editar.</div>
 
   <!-- Link de gestión chofer -->
   <div class="manageLinkBox" id="manageLinkBox">
-    <strong>✅ Publicación creada</strong>
+    <strong>🔐 Link privado del conductor (guardalo)</strong>
     <div class="muted" style="margin-top:4px;">
-      Guardá este link para <strong>gestionar tu viaje</strong> (asientos / pausar / editar).
+      Con este link podés administrar tu publicación. Si lo perdés, pedíselo al admin.
     </div>
     <code id="manageLink"></code>
     <button class="btnCopy" type="button" onclick="copiarLink()">📋 Copiar link</button>
@@ -154,7 +185,7 @@
   </div>
 </section>
 
-<!-- DONACIÓN -->
+<!-- DONACIÓN (se mantiene, además del acceso arriba) -->
 <section>
   <a href="https://link.mercadopago.com.ar/donacomvi"
      target="_blank"
@@ -168,6 +199,11 @@
 <div class="ad">
   ¿Querés anunciar acá?<br>
   📧 <a href="mailto:admcomvi@gmail.com">admcomvi@gmail.com</a>
+</div>
+
+<div class="infoBox">
+  <strong>Importante:</strong> por seguridad, ComVi <strong>no publica teléfonos</strong>.
+  Cuando tocás “Coordinar por WhatsApp”, el admin te conecta con el conductor.
 </div>
 
 <section>
@@ -293,7 +329,6 @@ function renderViajes() {
     return;
   }
 
-  // ✅ Orden: primero con lugares, luego completos
   const disponibles = VIAJES_CACHE.filter(v =>
     v.asientos !== null && v.asientos !== undefined && v.asientos > 0
   );
@@ -302,7 +337,6 @@ function renderViajes() {
     v.asientos !== null && v.asientos !== undefined && v.asientos <= 0
   );
 
-  // si por algún motivo asientos viene null/undefined, lo mandamos al final
   const sinDato = VIAJES_CACHE.filter(v =>
     v.asientos === null || v.asientos === undefined
   );
@@ -315,7 +349,6 @@ function renderViajes() {
 
     const chips = [];
 
-    // ✅ Asientos: mostrar incluso si es 0
     let completo = false;
     if (v.asientos !== null && v.asientos !== undefined) {
       if (v.asientos > 0) chips.push(`💺 ${v.asientos} lugares libres`);
@@ -328,7 +361,6 @@ function renderViajes() {
       completo = true;
     }
 
-    // ✅ Precio
     const precioTxt = (v.precio === null || v.precio === undefined)
       ? `💰 A convenir`
       : `💰 $${v.precio}`;
@@ -348,9 +380,10 @@ function renderViajes() {
       <div style="margin-top:10px;">
         ${
           completo
-            ? `<button disabled style="background:#adb5bd;cursor:not-allowed;">🚫 Sin lugares (completo)</button>
+            ? `<button disabled style="background:#adb5bd;cursor:not-allowed;">🚫 Completo (sin lugares)</button>
                <div class="muted" style="margin-top:6px;">Este viaje ya tiene los asientos reservados.</div>`
-            : `<button onclick="contactarAdmin(${v.id})">💬 Contactar (admin)</button>`
+            : `<button onclick="contactarAdmin(${v.id})">💬 Coordinar por WhatsApp</button>
+               <div class="muted" style="margin-top:6px;">El admin te conecta con el conductor (sin teléfonos públicos).</div>`
         }
       </div>
     `;
@@ -401,7 +434,6 @@ ID publicación: ${v?.id}`;
    LINK DE GESTIÓN (chofer)
 ================================ */
 function baseDirUrl() {
-  // remove filename (index.html) if present
   const url = new URL(window.location.href);
   url.hash = "";
   url.search = "";
@@ -438,7 +470,7 @@ async function publicarViaje() {
   const detalles = document.getElementById("detalles").value.trim() || null;
 
   if (!origen || !destino || !fecha || !hora || !telefono) {
-    alert("Completá Origen, Destino, Fecha, Hora y Teléfono");
+    alert("Completá Origen, Destino, Fecha, Hora y WhatsApp del conductor");
     return;
   }
   if (!asientos || asientos < 1) {
@@ -450,10 +482,7 @@ async function publicarViaje() {
     return;
   }
 
-  // ✅ fecha/hora local con offset (evita corrimientos)
   const fechaHoraISO = toLocalISOString(fecha, hora);
-
-  // ✅ token privado de edición para el chofer
   const editToken = crypto.randomUUID();
 
   const payload = {
@@ -486,7 +515,6 @@ async function publicarViaje() {
 
   alert("Viaje publicado ✅");
 
-  // mostrar link de gestión
   const id = data?.id;
   if (id) {
     const link = `${baseDirUrl()}/chofer.html?viaje=${encodeURIComponent(id)}&token=${encodeURIComponent(editToken)}`;
@@ -496,7 +524,6 @@ async function publicarViaje() {
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   }
 
-  // limpiar formulario completo
   document.getElementById("origen").value = "";
   document.getElementById("destino").value = "";
   document.getElementById("fecha").value = "";
