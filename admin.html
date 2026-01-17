@@ -405,8 +405,24 @@ function renderContactos() {
 }
 
 async function setActivo(viajeId, activo) {
-  const v = VIAJES_MAP.get(viajeId);
-  if (!v) { alert("Viaje no encontrado"); return; }
+  // Intentamos obtener el viaje del map
+  let v = VIAJES_MAP.get(viajeId);
+
+  // Si no está en el map, lo buscamos directo en la DB
+  if (!v) {
+    const { data, error } = await sb
+      .from("viajes")
+      .select("id, edit_token")
+      .eq("id", viajeId)
+      .single();
+
+    if (error || !data) {
+      alert("Viaje no encontrado");
+      console.error(error);
+      return;
+    }
+    v = data;
+  }
 
   const { error } = await sb
     .from("viajes")
@@ -415,7 +431,7 @@ async function setActivo(viajeId, activo) {
     .eq("edit_token", v.edit_token);
 
   if (error) {
-    alert("Error actualizando publicacion");
+    alert("Error actualizando publicación");
     console.error(error);
     return;
   }
@@ -423,6 +439,7 @@ async function setActivo(viajeId, activo) {
   await cargarMetricas();
   await cargarContactos();
 }
+
 
 async function marcarCompletado(viajeId) {
   const ok = confirm("¿Marcar viaje como completado y ocultarlo?");
