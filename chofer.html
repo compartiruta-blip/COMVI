@@ -1,5 +1,5 @@
 <!-- =========================
-     chofer.html (CORREGIDO)
+     chofer.html (MICROTEXTOS, SIN NUEVA LÓGICA)
      ========================= -->
 <!DOCTYPE html>
 <html lang="es">
@@ -43,7 +43,7 @@
 <body>
 <header>
   <h3 style="margin:0;">🚗 ComVi – Panel Conductor</h3>
-  <div class="muted" style="color:#dbe7ff;">Administrá tu publicación</div>
+  <div class="muted" style="color:#dbe7ff;">Este es tu link privado para administrar la publicación</div>
 </header>
 
 <div class="wrap">
@@ -56,7 +56,12 @@
     <div style="font-size:16px;font-weight:bold;" id="ruta"></div>
     <div style="margin-top:4px;" id="fechaHora"></div>
     <div class="pillbar" id="pills"></div>
-    <div class="muted" style="margin-top:6px;">ID: <span id="viajeId"></span> · Publicación: <strong id="pubEstado"></strong></div>
+    <div class="muted" style="margin-top:6px;">
+      ID: <span id="viajeId"></span> · Publicación: <strong id="pubEstado"></strong>
+      <div class="muted" style="margin-top:4px;">
+        “Activa” aparece en el listado · “Pausada” no se muestra.
+      </div>
+    </div>
 
     <div style="margin-top:10px;" class="actions">
       <button class="gray" id="btnRes" onclick="cambiarAsientos(-1)">➖ Reservaron 1 asiento</button>
@@ -65,12 +70,13 @@
     </div>
 
     <div class="muted" style="margin-top:8px;">
-      Tip: si ya no quedan lugares, bajá a 0 o pausá la publicación.
+      Tip: si llega a <strong>0</strong>, tu viaje queda como <strong>Completo</strong> y no recibe más pedidos.
     </div>
   </div>
 
   <div class="card" id="editCard" style="display:none;">
-    <h4 style="margin:0 0 6px;">✏️ Editar datos</h4>
+    <h4 style="margin:0 0 6px;">✏️ Editar publicación</h4>
+    <div class="muted" style="margin-bottom:6px;">Los cambios se guardan al tocar “Guardar cambios”.</div>
 
     <div class="row">
       <div>
@@ -115,7 +121,7 @@
     </select>
 
     <label class="muted">Detalles</label>
-    <textarea id="detalles" maxlength="220" placeholder="Punto de encuentro, paradas, equipaje, etc."></textarea>
+    <textarea id="detalles" maxlength="220" placeholder="Punto de encuentro, paradas, equipaje, música, etc."></textarea>
 
     <button class="green" id="btnSave" onclick="guardarCambios()">💾 Guardar cambios</button>
     <div class="muted" id="saveMsg" style="margin-top:6px;"></div>
@@ -194,7 +200,6 @@ async function cargarViaje() {
 
   setStatus(`Cargando viaje…`);
 
-  // Para MVP: validamos por id + token
   const { data, error } = await sb
     .from("viajes")
     .select("*")
@@ -232,7 +237,6 @@ function render() {
   btn.textContent = activo ? "⏸ Pausar" : "▶ Reactivar";
   btn.className = activo ? "red" : "green";
 
-  // Pills
   const pills = [];
   pills.push(`💺 ${VIAJE.asientos ?? 0} lugares`);
   pills.push((VIAJE.precio === null || VIAJE.precio === undefined) ? "💰 A convenir" : `💰 $${VIAJE.precio}`);
@@ -241,12 +245,10 @@ function render() {
   const pillbar = document.getElementById("pills");
   pillbar.innerHTML = pills.map(p => `<span class="pill">${p}</span>`).join("");
 
-  // Botón reserva: deshabilitar si ya está en 0
   const btnRes = document.getElementById("btnRes");
   const seats = parseInt(VIAJE.asientos ?? 0, 10);
   btnRes.disabled = seats <= 0;
 
-  // Form edición
   document.getElementById("fecha").value = toDateInputValue(VIAJE.fecha_hora);
   document.getElementById("hora").value = toTimeInputValue(VIAJE.fecha_hora);
   document.getElementById("horaAprox").checked = !!VIAJE.hora_aprox;
