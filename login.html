@@ -62,7 +62,8 @@
         btn.disabled = true;
         msg.textContent = "Abriendo Google…";
 
-        const redirectTo = window.COMVI_CONFIG.SITE_BASE_URL + "/auth/callback.html?next=" + encodeURIComponent(next);
+        const redirectTo = "https://padrearregui.github.io/COMVI/auth/callback.html?next=" + encodeURIComponent(next);
+
 
         const { error } = await sb.auth.signInWithOAuth({
           provider: "google",
