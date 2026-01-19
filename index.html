@@ -120,8 +120,15 @@
 <!-- PUBLICIDAD SUPERIOR -->
 <div class="ad">
   <strong>Publicidad</strong><br>
-  Servicio Técnico 💻· WhatsApp 11 5802-5832 · 📲Asistencia Remota
+  Servicio Técnico 💻 · 
+  <a href="https://wa.me/5491158025832?text=Hola%21%20Te%20escribo%20desde%20ComVi%20👋%0AVi%20la%20publicidad%20en%20la%20plataforma."
+     target="_blank"
+     style="text-decoration:none;font-weight:bold;">
+     WhatsApp 11 5802-5832
+  </a>
+  · 📲 Asistencia Remota
 </div>
+
 
 <section>
   <h3>📍 Publicar viaje (conductor)</h3>
@@ -210,12 +217,16 @@
   <h3>🗺️ Viajes disponibles</h3>
   <div id="listaViajes"></div>
 </section>
-
+ 
 <footer>
   Visitas: <span id="contador"></span><br>
-  <span class="muted">ComVi · Comunidad Viajera · MVP 0.1.1</span>
+  <span class="muted">
+    ComVi · Comunidad Viajera · MVP 0.1.2 ·
+    <a href="./terminos.html" style="color:#666;text-decoration:underline;">
+      Términos y Privacidad
+    </a>
+  </span>
 </footer>
-
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
@@ -226,18 +237,23 @@
 function obtenerUserHash() {
   let hash = localStorage.getItem("comvi_user_hash");
   if (!hash) {
-    hash = crypto.randomUUID();
+    // UUID compatible con navegadores viejos
+    hash = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
     localStorage.setItem("comvi_user_hash", hash);
   }
   return hash;
 }
 
-const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
-const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
+const SUPABASE_URL = "https://amwokcrudsupfkpgyxia.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ZuUe5CTChHQwW5M3qldKqw_zU4MO0qM";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ADMIN WhatsApp intermediario
-const telefonoAdmin = "5491158025832";
+const telefonoAdmin = "5491164003390";
 
 let VIAJES_CACHE = [];
 
@@ -245,14 +261,38 @@ let VIAJES_CACHE = [];
    FECHA LOCAL (evita corrimientos)
 ================================ */
 function toLocalISOString(dateStr, timeStr) {
-  const d = new Date(`${dateStr}T${timeStr}:00`);
+  if (!dateStr || !timeStr) return null;
+
+  // date "YYYY-MM-DD"
+  const dparts = String(dateStr).split("-");
+  if (dparts.length !== 3) return null;
+
+  const year = parseInt(dparts[0], 10);
+  const month = parseInt(dparts[1], 10) - 1; // 0-based
+  const day = parseInt(dparts[2], 10);
+
+  // time "HH:MM" or "HH:MM:SS"
+  const tparts = String(timeStr).split(":");
+  if (tparts.length < 2) return null;
+
+  const hour = parseInt(tparts[0], 10);
+  const minute = parseInt(tparts[1], 10);
+  const second = tparts.length >= 3 ? parseInt(tparts[2], 10) : 0;
+
+  const dt = new Date(year, month, day, hour, minute, second);
+
+  if (isNaN(dt.getTime())) return null;
+
   const pad = n => String(n).padStart(2, "0");
-  const tz = -d.getTimezoneOffset(); // minutes
-  const sign = tz >= 0 ? "+" : "-";
-  const hh = pad(Math.floor(Math.abs(tz) / 60));
-  const mm = pad(Math.abs(tz) % 60);
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00${sign}${hh}:${mm}`;
+
+  const tzMin = -dt.getTimezoneOffset();
+  const sign = tzMin >= 0 ? "+" : "-";
+  const hh = pad(Math.floor(Math.abs(tzMin) / 60));
+  const mm = pad(Math.abs(tzMin) % 60);
+
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}${sign}${hh}:${mm}`;
 }
+
 
 /* ===============================
    HELPERS
@@ -508,9 +548,23 @@ async function publicarViaje() {
       alert("La fecha/hora parece estar en el pasado. Revisala por favor.");
       return;
     }
+//debug temporal fecha hora error log
+    console.log("DEBUG fecha/hora:", { fecha, hora });
 
+    
     const fechaHoraISO = toLocalISOString(fecha, hora);
-    const editToken = crypto.randomUUID();
+       if (!fechaHoraISO) {
+         alert(`Fecha u hora inválida.\nfecha="${fecha}"\nhora="${hora}"`);
+         return;
+       }
+
+  
+    const editToken = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+       const r = Math.random() * 16 | 0;
+       const v = c === 'x' ? r : (r & 0x3 | 0x8);
+       return v.toString(16);
+    });
+
 
     const payload = {
       origen,
