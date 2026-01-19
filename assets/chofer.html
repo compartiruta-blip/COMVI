@@ -1,0 +1,376 @@
+<!-- =========================
+     chofer.html (MICROTEXTOS, SIN NUEVA LÓGICA)
+     ========================= -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <title>ComVi – Panel Conductor</title>
+
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#f5f5f5; }
+    header { background:#0d6efd; color:#fff; padding:12px; text-align:center; }
+    .wrap { padding: 12px; max-width: 720px; margin: 0 auto; }
+    .card {
+      background:#fff; border-radius:10px; padding:12px; margin:10px 0;
+      box-shadow:0 0 4px rgba(0,0,0,.1);
+    }
+    .muted { color:#666; font-size:12px; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    input, select, textarea, button {
+      width:100%; padding:10px; margin:6px 0; border-radius:8px; border:1px solid #ccc;
+      box-sizing:border-box;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    button { background:#0d6efd; color:#fff; border:none; cursor:pointer; }
+    button.gray { background:#6c757d; }
+    button.green { background:#198754; }
+    button.red { background:#dc3545; }
+    button:disabled { background:#adb5bd; cursor:not-allowed; }
+    .pillbar { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .pill { background:#f1f3f5; padding:6px 10px; border-radius:999px; font-size:12px; }
+    .inlineCheck {
+      display:flex; gap:8px; align-items:flex-start;
+      background:#fff; border:1px solid #ddd; padding:10px; border-radius:10px;
+      margin: 6px 0;
+    }
+    .inlineCheck input { width:auto; margin-top:2px; }
+    .actions { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+  </style>
+</head>
+
+<body>
+<header>
+  <h3 style="margin:0;">🚗 ComVi – Panel Conductor</h3>
+  <div class="muted" style="color:#dbe7ff;">Este es tu link privado para administrar la publicación</div>
+</header>
+
+<div class="wrap">
+
+  <div class="card" id="statusCard">
+    Cargando…
+  </div>
+
+  <div class="card" id="viajeCard" style="display:none;">
+    <div style="font-size:16px;font-weight:bold;" id="ruta"></div>
+    <div style="margin-top:4px;" id="fechaHora"></div>
+    <div class="pillbar" id="pills"></div>
+    <div class="muted" style="margin-top:6px;">
+      ID: <span id="viajeId"></span> · Publicación: <strong id="pubEstado"></strong>
+      <div class="muted" style="margin-top:4px;">
+        “Activa” aparece en el listado · “Pausada” no se muestra.
+      </div>
+    </div>
+
+    <div style="margin-top:10px;" class="actions">
+      <button class="gray" id="btnRes" onclick="cambiarAsientos(-1)">➖ Reservaron 1 asiento</button>
+      <button class="gray" onclick="cambiarAsientos(1)">➕ Se liberó 1 asiento</button>
+      <button id="btnToggleActivo" class="red" onclick="toggleActivo()">⏸ Pausar</button>
+    </div>
+
+    <div class="muted" style="margin-top:8px;">
+      Tip: si llega a <strong>0</strong>, tu viaje queda como <strong>Completo</strong> y no recibe más pedidos.
+    </div>
+  </div>
+
+  <div class="card" id="editCard" style="display:none;">
+    <h4 style="margin:0 0 6px;">✏️ Editar publicación</h4>
+    <div class="muted" style="margin-bottom:6px;">Los cambios se guardan al tocar “Guardar cambios”.</div>
+
+    <div class="row">
+      <div>
+        <label class="muted">Fecha</label>
+        <input type="date" id="fecha">
+      </div>
+      <div>
+        <label class="muted">Hora</label>
+        <input type="time" id="hora">
+      </div>
+    </div>
+
+    <div class="inlineCheck" title="Marcá esto si la hora no es exacta (ej: cerca de las 17)">
+      <input type="checkbox" id="horaAprox">
+      <label for="horaAprox">
+        <strong>Horario aproximado</strong><br>
+        <span class="muted">Se mostrará como “aprox”.</span>
+      </label>
+    </div>
+
+    <label class="muted">Lugares disponibles</label>
+    <input type="number" min="0" id="asientos">
+
+    <div class="inlineCheck" title="Marcá esto si el precio se define por chat">
+      <input type="checkbox" id="precioAConvenir">
+      <label for="precioAConvenir">
+        <strong>Precio a convenir</strong><br>
+        <span class="muted">Se mostrará “A convenir”.</span>
+      </label>
+    </div>
+
+    <label class="muted">Precio por asiento</label>
+    <input type="number" min="0" id="precio">
+
+    <label class="muted">Equipaje</label>
+    <select id="equipaje">
+      <option value="">(sin especificar)</option>
+      <option value="mochila">mochila</option>
+      <option value="bolso">bolso</option>
+      <option value="valija">valija</option>
+      <option value="aconvenir">a convenir</option>
+    </select>
+
+    <label class="muted">Detalles</label>
+    <textarea id="detalles" maxlength="220" placeholder="Punto de encuentro, paradas, equipaje, música, etc."></textarea>
+
+    <button class="green" id="btnSave" onclick="guardarCambios()">💾 Guardar cambios</button>
+    <div class="muted" id="saveMsg" style="margin-top:6px;"></div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://amwokcrudsupfkpgyxia.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ZuUe5CTChHQwW5M3qldKqw_zU4MO0qM";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let VIAJE = null;
+
+function qs(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+/* ===============================
+   FECHA LOCAL (evita corrimientos)
+================================ */
+function toLocalISOString(dateStr, timeStr) {
+  const d = new Date(`${dateStr}T${timeStr}:00`);
+  const pad = n => String(n).padStart(2, "0");
+  const tz = -d.getTimezoneOffset(); // minutes
+  const sign = tz >= 0 ? "+" : "-";
+  const hh = pad(Math.floor(Math.abs(tz) / 60));
+  const mm = pad(Math.abs(tz) % 60);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00${sign}${hh}:${mm}`;
+}
+
+function fmtFecha(fechaISO) {
+  return new Date(fechaISO).toLocaleString("es-AR", { dateStyle:"short", timeStyle:"short" });
+}
+function toDateInputValue(fechaISO) {
+  const d = new Date(fechaISO);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+function toTimeInputValue(fechaISO) {
+  const d = new Date(fechaISO);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${hh}:${mi}`;
+}
+
+function setStatus(html) {
+  const el = document.getElementById("statusCard");
+  el.innerHTML = html;
+}
+
+function setupPrecioAConvenir() {
+  const chk = document.getElementById("precioAConvenir");
+  const precio = document.getElementById("precio");
+
+  function apply() {
+    const on = chk.checked;
+    precio.disabled = on;
+    if (on) precio.value = "";
+  }
+  chk.addEventListener("change", apply);
+  apply();
+}
+
+async function cargarViaje() {
+  const viajeId = qs("viaje");
+  const token = qs("token");
+
+  if (!viajeId || !token) {
+    setStatus(`<strong>Link inválido</strong><br><span class="muted">Falta viaje o token.</span>`);
+    return;
+  }
+
+  setStatus(`Cargando viaje…`);
+
+  const { data, error } = await sb
+    .from("viajes")
+    .select("*")
+    .eq("id", viajeId)
+    .eq("edit_token", token)
+    .limit(1);
+
+  if (error) {
+    console.error(error);
+    setStatus(`<strong>Error</strong><br><span class="muted">No se pudo cargar el viaje.</span>`);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    setStatus(`<strong>Acceso denegado</strong><br><span class="muted">El viaje o el token no coinciden.</span>`);
+    return;
+  }
+
+  VIAJE = data[0];
+  render();
+}
+
+function render() {
+  document.getElementById("statusCard").style.display = "none";
+  document.getElementById("viajeCard").style.display = "block";
+  document.getElementById("editCard").style.display = "block";
+
+  document.getElementById("ruta").innerText = `${VIAJE.origen} → ${VIAJE.destino}`;
+  document.getElementById("fechaHora").innerHTML = `🕒 ${fmtFecha(VIAJE.fecha_hora)}${VIAJE.hora_aprox ? ' <span class="muted">(aprox)</span>' : ''}`;
+  document.getElementById("viajeId").innerText = VIAJE.id;
+
+  const activo = (VIAJE.activo === undefined || VIAJE.activo === null) ? true : !!VIAJE.activo;
+  document.getElementById("pubEstado").innerText = activo ? "Activa" : "Pausada";
+  const btn = document.getElementById("btnToggleActivo");
+  btn.textContent = activo ? "⏸ Pausar" : "▶ Reactivar";
+  btn.className = activo ? "red" : "green";
+
+  const pills = [];
+  pills.push(`💺 ${VIAJE.asientos ?? 0} lugares`);
+  pills.push((VIAJE.precio === null || VIAJE.precio === undefined) ? "💰 A convenir" : `💰 $${VIAJE.precio}`);
+  if (VIAJE.equipaje) pills.push(`🧳 ${VIAJE.equipaje}`);
+  if (VIAJE.hora_aprox) pills.push("🕒 aprox");
+  const pillbar = document.getElementById("pills");
+  pillbar.innerHTML = pills.map(p => `<span class="pill">${p}</span>`).join("");
+
+  const btnRes = document.getElementById("btnRes");
+  const seats = parseInt(VIAJE.asientos ?? 0, 10);
+  btnRes.disabled = seats <= 0;
+
+  document.getElementById("fecha").value = toDateInputValue(VIAJE.fecha_hora);
+  document.getElementById("hora").value = toTimeInputValue(VIAJE.fecha_hora);
+  document.getElementById("horaAprox").checked = !!VIAJE.hora_aprox;
+
+  document.getElementById("asientos").value = (VIAJE.asientos ?? 0);
+
+  const aConvenir = (VIAJE.precio === null || VIAJE.precio === undefined);
+  document.getElementById("precioAConvenir").checked = aConvenir;
+  document.getElementById("precio").value = aConvenir ? "" : (VIAJE.precio ?? "");
+  setupPrecioAConvenir();
+
+  document.getElementById("equipaje").value = VIAJE.equipaje ?? "";
+  document.getElementById("detalles").value = VIAJE.comentario ?? "";
+
+  document.getElementById("saveMsg").innerText = "";
+}
+
+async function cambiarAsientos(delta) {
+  if (!VIAJE) return;
+  const token = qs("token");
+
+  const actual = parseInt(VIAJE.asientos ?? 0, 10);
+  const nuevo = Math.max(0, actual + delta);
+
+  const { error } = await sb
+    .from("viajes")
+    .update({ asientos: nuevo })
+    .eq("id", VIAJE.id)
+    .eq("edit_token", token);
+
+  if (error) {
+    alert("Error actualizando asientos");
+    console.error(error);
+    return;
+  }
+
+  VIAJE.asientos = nuevo;
+  render();
+}
+
+async function toggleActivo() {
+  if (!VIAJE) return;
+  const token = qs("token");
+
+  const activo = (VIAJE.activo === undefined || VIAJE.activo === null) ? true : !!VIAJE.activo;
+  const nuevo = !activo;
+
+  const { error } = await sb
+    .from("viajes")
+    .update({ activo: nuevo })
+    .eq("id", VIAJE.id)
+    .eq("edit_token", token);
+
+  if (error) {
+    alert("Error actualizando publicación");
+    console.error(error);
+    return;
+  }
+
+  VIAJE.activo = nuevo;
+  render();
+}
+
+async function guardarCambios() {
+  if (!VIAJE) return;
+  const token = qs("token");
+
+  const btnSave = document.getElementById("btnSave");
+  btnSave.disabled = true;
+  btnSave.textContent = "Guardando…";
+
+  const fecha = document.getElementById("fecha").value;
+  const hora = document.getElementById("hora").value;
+  const horaAprox = document.getElementById("horaAprox").checked;
+
+  const asientos = parseInt(document.getElementById("asientos").value, 10);
+  const precioAConvenir = document.getElementById("precioAConvenir").checked;
+  const precio = precioAConvenir ? null : (parseInt(document.getElementById("precio").value, 10) || null);
+
+  const equipaje = document.getElementById("equipaje").value || null;
+  const detalles = document.getElementById("detalles").value.trim() || null;
+
+  if (!fecha || !hora) { alert("Completá fecha y hora"); btnSave.disabled=false; btnSave.textContent="💾 Guardar cambios"; return; }
+  if (Number.isNaN(asientos) || asientos < 0) { alert("Asientos inválidos"); btnSave.disabled=false; btnSave.textContent="💾 Guardar cambios"; return; }
+  if (precio !== null && precio < 0) { alert("Precio inválido"); btnSave.disabled=false; btnSave.textContent="💾 Guardar cambios"; return; }
+
+  const fechaHoraISO = toLocalISOString(fecha, hora);
+
+  const payload = {
+    fecha_hora: fechaHoraISO,
+    hora_aprox: horaAprox,
+    asientos,
+    precio,
+    equipaje,
+    comentario: detalles
+  };
+
+  const { error } = await sb
+    .from("viajes")
+    .update(payload)
+    .eq("id", VIAJE.id)
+    .eq("edit_token", token);
+
+  btnSave.disabled = false;
+  btnSave.textContent = "💾 Guardar cambios";
+
+  if (error) {
+    alert("Error guardando cambios");
+    console.error(error);
+    return;
+  }
+
+  VIAJE = { ...VIAJE, ...payload };
+  render();
+  document.getElementById("saveMsg").innerText = "Guardado ✅";
+}
+
+window.addEventListener("load", () => {
+  cargarViaje();
+});
+</script>
+</body>
+</html>
