@@ -21,25 +21,21 @@
 
   <script src="../config.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../auth.js"></script>
   <script>
     const msg = document.getElementById("msg");
 
-    const sb = window.supabase.createClient(
-      window.COMVI_CONFIG.SUPABASE_URL,
-      window.COMVI_CONFIG.SUPABASE_ANON_KEY
-    );
-
     (async () => {
-      let next = localStorage.getItem("comvi_next") || "../index.html";
+      const params = new URLSearchParams(window.location.search);
+      let next = params.get("next") || localStorage.getItem("comvi_next") || "../index.html";
       localStorage.removeItem("comvi_next");
 
-       // Fallback anti-404 (si next quedó viejo o apunta a /auth/)
+      // Fallback anti-404 (si next quedó viejo o apunta a /auth/)
       if (!next || next.includes("/auth/")) next = "../index.html";
-
 
       // En OAuth, supabase-js termina de guardar la sesión automáticamente al volver.
       // Solo chequeamos que ya exista y redirigimos.
-      const { data: { session }, error } = await sb.auth.getSession();
+      const { data: { session }, error } = await COMVI_AUTH.sb.auth.getSession();
 
       if (error) console.error(error);
 

@@ -228,7 +228,9 @@
   </span>
 </footer>
 
+<script src="./config.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="./auth.js"></script>
 
 <script>
 /* ===============================
@@ -248,9 +250,7 @@ function obtenerUserHash() {
   return hash;
 }
 
-const SUPABASE_URL = "https://koawnshgdqdqfkzppqpb.supabase.co";
-const SUPABASE_KEY = "sb_publishable_yPOsphY0cx4OWRVFQkdcSA_jnsxj30b";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = COMVI_AUTH.sb;
 
 // ADMIN WhatsApp intermediario
 const telefonoAdmin = "5491158025832";

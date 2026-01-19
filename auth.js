@@ -19,9 +19,17 @@
     throw new Error("No auth");
   }
 
-  async function signInGoogle() {
+  async function signInGoogle(next) {
+    if (next) {
+      localStorage.setItem("comvi_next", next);
+    } else {
+      localStorage.removeItem("comvi_next");
+    }
+
     // callback absoluto usando tu SITE_BASE_URL
-    const redirectTo = `${CFG.SITE_BASE_URL}/auth/callback.html`;
+    const redirectTo = next
+      ? `${CFG.SITE_BASE_URL}/auth/callback.html?next=${encodeURIComponent(next)}`
+      : `${CFG.SITE_BASE_URL}/auth/callback.html`;
     await sb.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo }

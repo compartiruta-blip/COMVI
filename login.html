@@ -36,24 +36,18 @@
 
   <script src="./config.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="./auth.js"></script>
   <script>
     const msg = document.getElementById("msg");
     const btn = document.getElementById("btnGoogle");
 
-    const sb = window.supabase.createClient(
-      window.COMVI_CONFIG.SUPABASE_URL,
-      window.COMVI_CONFIG.SUPABASE_ANON_KEY
-    );
-
-    // Permite volver a la página desde la que viniste (opcional)
     const params = new URLSearchParams(window.location.search);
-    const next = params.get("next") || "./index.html";
+    const next = params.get("next") || "index.html";
 
     async function ensureNotLoggedIn() {
-      const { data: { session } } = await sb.auth.getSession();
+      const { data: { session } } = await COMVI_AUTH.sb.auth.getSession();
       if (session) {
-        // Ya está logueado: mandarlo a next
-        window.location.href = next;
+        window.location.replace(next);
       }
     }
 
@@ -61,17 +55,7 @@
       try {
         btn.disabled = true;
         msg.textContent = "Abriendo Google…";
-        localStorage.removeItem("comvi_next");
-        localStorage.setItem("comvi_next", next); 
-        const redirectTo = "https://padrearregui.github.io/COMVI/auth/callback.html";
-
-
-        const { error } = await sb.auth.signInWithOAuth({
-          provider: "google",
-          options: { redirectTo }
-        });
-
-        if (error) throw error;
+        await COMVI_AUTH.signInGoogle(next);
       } catch (e) {
         console.error(e);
         msg.textContent = "Error al iniciar sesión. Revisá configuración de Google/Supabase.";
@@ -81,60 +65,5 @@
 
     ensureNotLoggedIn();
   </script>
-  <!-- al final del body (antes de </body>) -->
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script src="./config.js"></script>
-<script src="./auth.js"></script>
-
-<script>
-  (async () => {
-    // Si ya está logueado, vuelve al destino
-    const next = new URLSearchParams(location.search).get("next") || "index.html";
-    try {
-      const { data: { session } } = await COMVI_AUTH.sb.auth.getSession();
-      if (session) location.replace(next);
-    } catch {}
-  })();
-</script>
-
-<!-- al final del body (antes de </body>) -->
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script src="./config.js"></script>
-<script src="./auth.js"></script>
-
-<script>
-  (async () => {
-    // Si ya está logueado, vuelve al destino
-    const next = new URLSearchParams(location.search).get("next") || "index.html";
-    try {
-      const { data: { session } } = await COMVI_AUTH.sb.auth.getSession();
-      if (session) location.replace(next);
-    } catch {}
-  })();
-</script>
-
-<main style="max-width:520px;margin:0 auto;padding:20px;font-family:Arial;">
-  <div style="background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:14px;">
-    <h3 style="margin:0 0 6px;">ComVi · Acceso</h3>
-    <div style="color:#666;font-size:13px;margin-bottom:10px;">
-      Iniciá sesión con Google para publicar/administrar viajes.
-    </div>
-
-    <button id="btnGoogle"
-      style="width:100%;padding:10px;border-radius:10px;border:none;background:#0d6efd;color:#fff;cursor:pointer;">
-      Continuar con Google
-    </button>
-
-    <div id="msg" style="color:#666;font-size:12px;margin-top:10px;"></div>
-  </div>
-</main>
-
-<script>
-  document.getElementById("btnGoogle").onclick = async () => {
-    document.getElementById("msg").textContent = "Abriendo Google…";
-    await COMVI_AUTH.signInGoogle();
-  };
-</script>
-
 </body>
 </html>
