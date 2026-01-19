@@ -30,8 +30,8 @@
     );
 
     (async () => {
-      const params = new URLSearchParams(window.location.search);
-      const next = params.get("next") || "../index.html";
+      const next = localStorage.getItem("comvi_next") || "../index.html";
+      localStorage.removeItem("comvi_next");
 
       // En OAuth, supabase-js termina de guardar la sesión automáticamente al volver.
       // Solo chequeamos que ya exista y redirigimos.
