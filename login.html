@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComVi · Ingresar</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #fafafa; }
+    header { background: #0d6efd; color: white; padding: 12px; text-align: center; }
+    main { padding: 16px; max-width: 520px; margin: 0 auto; }
+    .card { background: white; border: 1px solid #e5e5e5; border-radius: 10px; padding: 14px; box-shadow: 0 2px 6px rgba(0,0,0,.04); }
+    button { width: 100%; padding: 12px; border: 0; border-radius: 8px; background: #0d6efd; color: white; font-size: 16px; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .muted { color: #666; font-size: 14px; margin-top: 10px; }
+    .row { display:flex; gap: 10px; margin-top: 10px; }
+    a { color: #0d6efd; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <header>ComVi · Ingresar</header>
+
+  <main>
+    <div class="card">
+      <p>Ingresá para <b>contactar</b> o <b>publicar/editar</b> viajes.</p>
+
+      <button id="btnGoogle">Entrar con Google</button>
+
+      <p class="muted" id="msg"></p>
+
+      <div class="row">
+        <a href="./index.html">Volver</a>
+        <a href="./terminos.html" target="_blank" rel="noopener">Términos</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="./config.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script>
+    const msg = document.getElementById("msg");
+    const btn = document.getElementById("btnGoogle");
+
+    const sb = window.supabase.createClient(
+      window.COMVI_CONFIG.SUPABASE_URL,
+      window.COMVI_CONFIG.SUPABASE_ANON_KEY
+    );
+
+    // Permite volver a la página desde la que viniste (opcional)
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next") || "./index.html";
+
+    async function ensureNotLoggedIn() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        // Ya está logueado: mandarlo a next
+        window.location.href = next;
+      }
+    }
+
+    btn.addEventListener("click", async () => {
+      try {
+        btn.disabled = true;
+        msg.textContent = "Abriendo Google…";
+
+        const redirectTo = window.COMVI_CONFIG.SITE_BASE_URL + "/auth/callback.html?next=" + encodeURIComponent(next);
+
+        const { error } = await sb.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo }
+        });
+
+        if (error) throw error;
+      } catch (e) {
+        console.error(e);
+        msg.textContent = "Error al iniciar sesión. Revisá configuración de Google/Supabase.";
+        btn.disabled = false;
+      }
+    });
+
+    ensureNotLoggedIn();
+  </script>
+</body>
+</html>
