@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComVi · Accediendo…</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#fafafa; margin:0; }
+    main { max-width: 520px; margin: 0 auto; padding: 20px; }
+    .card { background: white; border: 1px solid #e5e5e5; border-radius: 10px; padding: 14px; }
+    .muted { color:#666; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="card">
+      <div>ComVi</div>
+      <p class="muted" id="msg">Procesando login…</p>
+    </div>
+  </main>
+
+  <script src="../config.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script>
+    const msg = document.getElementById("msg");
+
+    const sb = window.supabase.createClient(
+      window.COMVI_CONFIG.SUPABASE_URL,
+      window.COMVI_CONFIG.SUPABASE_ANON_KEY
+    );
+
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const next = params.get("next") || "../index.html";
+
+      // En OAuth, supabase-js termina de guardar la sesión automáticamente al volver.
+      // Solo chequeamos que ya exista y redirigimos.
+      const { data: { session }, error } = await sb.auth.getSession();
+
+      if (error) console.error(error);
+
+      if (!session) {
+        msg.textContent = "No se detectó sesión. Si esto se repite, faltan Redirect URLs en Supabase.";
+        // fallback
+        setTimeout(() => window.location.href = "../login.html?next=" + encodeURIComponent(next), 1200);
+        return;
+      }
+
+      msg.textContent = "Listo. Redirigiendo…";
+      setTimeout(() => window.location.href = next, 300);
+    })();
+  </script>
+</body>
+</html>
