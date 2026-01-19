@@ -30,8 +30,12 @@
     );
 
     (async () => {
-      const next = localStorage.getItem("comvi_next") || "../index.html";
+      let next = localStorage.getItem("comvi_next") || "../index.html";
       localStorage.removeItem("comvi_next");
+
+       // Fallback anti-404 (si next quedó viejo o apunta a /auth/)
+      if (!next || next.includes("/auth/")) next = "../index.html";
+
 
       // En OAuth, supabase-js termina de guardar la sesión automáticamente al volver.
       // Solo chequeamos que ya exista y redirigimos.
