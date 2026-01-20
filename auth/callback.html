@@ -27,11 +27,28 @@
 
     (async () => {
       const params = new URLSearchParams(window.location.search);
-      let next = params.get("next") || localStorage.getItem("comvi_next") || "../index.html";
+      let next = params.get("next") || localStorage.getItem("comvi_next") || "/COMVI/index.html";
       localStorage.removeItem("comvi_next");
 
-      // Fallback anti-404 (si next quedó viejo o apunta a /auth/)
-      if (!next || next.includes("/auth/")) next = "../index.html";
+      // Normalizar next para que SIEMPRE sea navegable desde /auth/
+      if (!next) next = "/COMVI/index.html";
+
+      // Si viene absoluto, lo dejamos.
+      // Si viene como "/COMVI/..." lo dejamos.
+      // Si viene como "admin.html" o "../admin.html" lo convertimos a "/COMVI/admin.html".
+      if (next.startsWith("http")) {
+        // ok
+      } else if (next.startsWith("/")) {
+        // ok (ej: /COMVI/admin.html)
+      } else {
+        // quitar ../ o ./
+        next = next.replace(/^(\.\.\/)+/, "").replace(/^(\.\/)+/, "");
+        next = "/COMVI/" + next;
+      }
+
+      // Anti-bug: nunca volver a /auth/ por next
+      if (next.includes("/auth/")) next = "/COMVI/index.html";
+
 
       // En OAuth, supabase-js termina de guardar la sesión automáticamente al volver.
       // Solo chequeamos que ya exista y redirigimos.
@@ -47,7 +64,8 @@
       }
 
       msg.textContent = "Listo. Redirigiendo…";
-      setTimeout(() => window.location.href = next, 300);
+      setTimeout(() => window.location.href = (next.startsWith("http") ? next : (window.location.origin + next)), 300);
+
     })();
   </script>
 </body>
