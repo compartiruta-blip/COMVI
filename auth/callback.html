@@ -19,15 +19,12 @@
     </div>
   </main>
 
-  <script src="../config.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../config.js"></script>
+  <script src="../auth.js"></script>
   <script>
     const msg = document.getElementById("msg");
-
-    const sb = window.supabase.createClient(
-      window.COMVI_CONFIG.SUPABASE_URL,
-      window.COMVI_CONFIG.SUPABASE_ANON_KEY
-    );
+    const sb = COMVI_AUTH.sb;
 
     (async () => {
       let next = localStorage.getItem("comvi_next") || "../index.html";
