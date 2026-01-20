@@ -132,10 +132,10 @@
 </div>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script src="./auth.js"></script>
 <script>
-const SUPABASE_URL = "https://amwokcrudsupfkpgyxia.supabase.co";
-const SUPABASE_KEY = "sb_publishable_ZuUe5CTChHQwW5M3qldKqw_zU4MO0qM";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = COMVI_AUTH.sb;
 
 let VIAJE = null;
 

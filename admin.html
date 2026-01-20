@@ -74,29 +74,13 @@
 <div id="listaContactos"></div>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script src="./auth.js"></script>
 <script>
-/* ===============================
-   GATE ADMIN (PIN SIMPLE MVP)
-================================ */
-(function gateAdmin() {
-  const ok = localStorage.getItem("comvi_admin_ok");
-  if (ok === "1") return;
-
-  const pin = prompt("Admin PIN:");
-  // CAMBIÁ ESTE PIN
-  if (pin !== "2296") {
-    document.body.innerHTML = "<div style='padding:16px;font-family:Arial'>Acceso denegado</div>";
-    throw new Error("No autorizado");
-  }
-  localStorage.setItem("comvi_admin_ok", "1");
-})();
-
 /* ===============================
    SUPABASE
 ================================ */
-const SUPABASE_URL = "https://amwokcrudsupfkpgyxia.supabase.co";
-const SUPABASE_KEY = "sb_publishable_ZuUe5CTChHQwW5M3qldKqw_zU4MO0qM";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = COMVI_AUTH.sb;
 
 let CONTACTOS_CACHE = [];
 let VIAJES_MAP = new Map(); // id -> viaje
@@ -506,6 +490,7 @@ async function guardarEdicion(viajeId) {
    INIT
 ================================ */
 (async function init() {
+  await COMVI_AUTH.requireAuth();
   await cargarMetricas();
   await cargarContactos();
 })();
