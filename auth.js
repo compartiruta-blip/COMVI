@@ -13,10 +13,13 @@
     const { data: { session } } = await sb.auth.getSession();
     if (session) return session;
 
-    // Mantiene el archivo actual + query
-    const here = location.pathname.split("/").slice(-1)[0] + location.search + location.hash;
-    location.replace(`login.html?next=${encodeURIComponent(here)}`);
-    throw new Error("No auth");
+    // Guardar ruta completa (incluye /COMVI/...) para que callback redirija bien
+    const here = location.pathname + location.search + location.hash;
+
+    // Ir a login usando base absoluta (evita problemas de rutas)
+    const loginUrl = `${COMVI_CONFIG.SITE_BASE_URL}/login.html?next=${encodeURIComponent(here)}`;
+    location.replace(loginUrl);
+
   }
 
   async function signInGoogle(next) {
