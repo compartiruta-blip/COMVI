@@ -3,73 +3,536 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ComVi – Comunidad Viajera</title>
+  <title>ComVi — Comunidad Viajera</title>
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="assets/FAVICON.png">
+  <link rel="icon" type="image/png" href="assets/favicon.ico" />
 
   <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0d6efd, #0a58ca);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      text-align: center;
+    :root{
+      --bg1:#070b18;
+      --bg2:#0a1b3a;
+      --c1:#0d6efd;
+      --c2:#00d4ff;
+      --c3:#7c3aed;
+      --txt:#eaf2ff;
+      --muted:#a9b7d0;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.10);
+      --stroke: rgba(255,255,255,.14);
+      --shadow: 0 10px 40px rgba(0,0,0,.35);
+      --radius: 18px;
+      --max: 1100px;
     }
 
-    .container {
-      max-width: 520px;
-      padding: 30px;
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      color:var(--txt);
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(13,110,253,.25), transparent 60%),
+                  radial-gradient(1000px 700px at 80% 20%, rgba(124,58,237,.22), transparent 60%),
+                  radial-gradient(900px 600px at 60% 80%, rgba(0,212,255,.18), transparent 55%),
+                  linear-gradient(180deg, var(--bg1), var(--bg2));
+      overflow-x:hidden;
     }
 
-    .logo {
-      max-width: 180px;
-      margin-bottom: 25px;
+    /* --- Ambient animation layer --- */
+    .bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
     }
 
-    h1 {
-      margin: 0 0 10px;
-      font-size: 26px;
-      font-weight: bold;
+    .blob {
+      position:absolute;
+      width: 520px;
+      height: 520px;
+      border-radius: 999px;
+      filter: blur(40px);
+      opacity: .55;
+      transform: translate3d(0,0,0);
+      mix-blend-mode: screen;
+      animation: floaty 14s ease-in-out infinite;
+    }
+    .blob.b1{ background: rgba(13,110,253,.55); left:-120px; top:-120px; animation-duration: 15s; }
+    .blob.b2{ background: rgba(0,212,255,.45); right:-160px; top:120px; animation-duration: 17s; }
+    .blob.b3{ background: rgba(124,58,237,.50); left:20%; bottom:-220px; animation-duration: 19s; }
+
+    @keyframes floaty{
+      0%,100%{ transform: translate3d(0,0,0) scale(1); }
+      35%{ transform: translate3d(40px, -30px, 0) scale(1.05); }
+      70%{ transform: translate3d(-30px, 20px, 0) scale(.98); }
     }
 
-    p {
-      font-size: 16px;
-      line-height: 1.6;
-      opacity: 0.95;
+    /* floating particles */
+    .spark {
+      position:absolute;
+      width: 10px; height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.35);
+      filter: blur(1px);
+      opacity:.35;
+      animation: drift linear infinite;
+    }
+    @keyframes drift{
+      from{ transform: translate3d(0, 120vh, 0); }
+      to{ transform: translate3d(0, -20vh, 0); }
     }
 
-    .muted {
-      margin-top: 25px;
+    /* --- Layout --- */
+    .wrap{
+      position: relative;
+      z-index: 1;
+      min-height: 100%;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .topbar{
+      position: sticky;
+      top:0;
+      z-index: 3;
+      backdrop-filter: blur(10px);
+      background: rgba(7,11,24,.45);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .topbar-inner{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 14px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      text-decoration:none;
+      color:inherit;
+    }
+    .brand img{
+      height: 34px;
+      width:auto;
+      display:block;
+      filter: drop-shadow(0 6px 18px rgba(0,0,0,.35));
+    }
+    .brand .name{
+      display:flex;
+      flex-direction:column;
+      line-height:1.1;
+    }
+    .brand .name strong{ font-size: 14px; letter-spacing:.2px; }
+    .brand .name span{ font-size: 12px; color: var(--muted); }
+
+    .top-actions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .btn{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--txt);
+      padding: 10px 12px;
+      border-radius: 12px;
+      text-decoration:none;
       font-size: 13px;
-      opacity: 0.75;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+      transition: transform .15s ease, background .2s ease, border-color .2s ease;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.22); }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(13,110,253,.95), rgba(0,212,255,.70));
+      border-color: rgba(255,255,255,.18);
+      box-shadow: 0 14px 40px rgba(13,110,253,.25);
+      color: #061022;
+      font-weight: 700;
+    }
+    .btn.primary:hover{ filter: brightness(1.02); }
+
+    .hero{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 56px 18px 28px;
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 22px;
+      align-items:start;
+    }
+
+    @media (max-width: 900px){
+      .hero{ grid-template-columns: 1fr; padding-top: 34px; }
+      .top-actions{ justify-content:stretch; }
+      .btn{ flex:1; justify-content:center; }
+    }
+
+    .pill{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      padding: 8px 12px;
+      border-radius: 999px;
+      width: fit-content;
+    }
+
+    h1{
+      margin: 14px 0 10px;
+      font-size: clamp(30px, 4.2vw, 52px);
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+    }
+    .lead{
+      margin: 0 0 16px;
+      color: rgba(234,242,255,.88);
+      font-size: 16px;
+      line-height:1.65;
+      max-width: 62ch;
+    }
+
+    .hero-cta{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top: 18px;
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .panel{
+      padding: 18px;
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .kpi{
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+    }
+    .kpi strong{ display:block; font-size: 14px; }
+    .kpi span{ color: var(--muted); font-size: 12px; }
+
+    .section{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 22px 18px;
+    }
+
+    .grid3{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 900px){
+      .grid3{ grid-template-columns: 1fr; }
+    }
+
+    .feature{
+      padding: 16px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      min-height: 120px;
+    }
+    .feature h3{ margin: 0 0 8px; font-size: 15px; }
+    .feature p{ margin:0; color: var(--muted); line-height:1.55; font-size: 13px; }
+
+    .split{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    @media (max-width: 900px){
+      .split{ grid-template-columns: 1fr; }
+    }
+
+    .list{
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+      display:grid;
+      gap: 10px;
+    }
+    .list li{
+      display:flex;
+      gap: 10px;
+      align-items:flex-start;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .dot{
+      width: 10px; height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--c1), var(--c2));
+      margin-top: 6px;
+      flex: 0 0 auto;
+      box-shadow: 0 0 0 6px rgba(13,110,253,.14);
+    }
+    .list b{ display:block; font-size: 13px; margin-bottom: 2px; }
+    .list span{ color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+    .ctaBox{
+      padding: 18px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      box-shadow: var(--shadow);
+    }
+    .ctaBox h2{ margin:0 0 6px; font-size: 18px; }
+    .ctaBox p{ margin:0 0 12px; color: var(--muted); line-height:1.6; }
+
+    .footer{
+      margin-top: 26px;
+      padding: 26px 18px 34px;
+      color: rgba(234,242,255,.72);
+      text-align:center;
+      border-top: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.10);
+    }
+    .footer small{ display:block; margin-top: 8px; color: rgba(234,242,255,.55); }
+
+    /* --- Reveal on scroll --- */
+    .reveal{
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity .7s ease, transform .7s ease;
+    }
+    .reveal.on{
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce){
+      .blob, .spark{ animation: none !important; }
+      .reveal{ opacity:1 !important; transform:none !important; transition:none !important; }
+      .btn{ transition:none !important; }
     }
   </style>
 </head>
 
 <body>
-
-  <div class="container">
-    <img src="assets/LOGO.png" alt="ComVi" class="logo">
-
-    <h1>Estamos desarrollando ComVi</h1>
-
-    <p>
-      Una nueva aplicación para la comunidad viajera.<br>
-      Muy pronto vas a poder compartir viajes, conectar personas
-      y organizar trayectos de manera simple y segura.
-    </p>
-
-    <div class="muted">
-      ComVi · Comunidad Viajera Argentina
-    </div>
+  <!-- Animated background -->
+  <div class="bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <!-- sparks injected by JS -->
   </div>
 
+  <div class="wrap">
+    <div class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="#">
+          <img src="assets/LOGO.png" alt="ComVi">
+          <div class="name">
+            <strong>ComVi</strong>
+            <span>Comunidad viajera · Argentina</span>
+          </div>
+        </a>
+
+        <div class="top-actions">
+          <a class="btn" href="#fundadores">🤝 Socio fundador</a>
+          <a class="btn primary" href="https://link.mercadopago.com.ar/donacomvi" target="_blank" rel="noopener">❤️ Donar</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="reveal">
+        <div class="pill">🚧 Sitio en desarrollo · Acceso anticipado por invitación</div>
+
+        <h1>Estamos construyendo una aplicación para la comunidad viajera.</h1>
+
+        <p class="lead">
+          ComVi nace para ordenar lo que hoy se coordina en grupos: publicar viajes, ver asientos disponibles,
+          y conectar personas de forma simple. Ahora estamos en etapa de construcción y validación.
+        </p>
+
+        <div class="hero-cta">
+          <a class="btn primary" href="https://link.mercadopago.com.ar/donacomvi" target="_blank" rel="noopener">❤️ Donar para sostener ComVi</a>
+          <a class="btn" href="#fundadores">Ver beneficios de fundador</a>
+        </div>
+
+        <p class="muted" style="margin-top:10px;">
+          Tu aporte acelera desarrollo, mejoras de seguridad y lanzamiento de la versión con login.
+        </p>
+      </div>
+
+      <aside class="card panel reveal">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+          <div>
+            <strong style="font-size:15px;">📌 En qué estamos</strong>
+            <div class="muted" style="margin-top:6px;line-height:1.6;">
+              MVP en marcha + pruebas reales. Próximo paso: ComVi 0.2 con login y protección anti-spam.
+            </div>
+          </div>
+          <div class="pill" style="white-space:nowrap;">⚡ Etapa MVP</div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi">
+            <strong>+ Organización</strong>
+            <span>menos ruido, más claridad</span>
+          </div>
+          <div class="kpi">
+            <strong>+ Confianza</strong>
+            <span>perfiles y reputación</span>
+          </div>
+          <div class="kpi">
+            <strong>+ Seguridad</strong>
+            <span>reducir estafas y spam</span>
+          </div>
+          <div class="kpi">
+            <strong>+ Comunidad</strong>
+            <span>mismo espíritu, mejor sistema</span>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="section reveal" id="que">
+      <div class="grid3">
+        <div class="feature card">
+          <h3>🚗 Publicación simple</h3>
+          <p>Chofer publica origen/destino, fecha/hora, asientos y detalles. Sin vueltas.</p>
+        </div>
+        <div class="feature card">
+          <h3>🧭 Búsqueda clara</h3>
+          <p>Encontrás más rápido lo que necesitás, sin scrollear interminable en grupos.</p>
+        </div>
+        <div class="feature card">
+          <h3>🛡️ Próximo: login</h3>
+          <p>Perfiles, reputación y controles para reducir spam y mejorar la confianza.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOUNDERS -->
+    <section class="section split reveal" id="fundadores">
+      <div class="card panel">
+        <h2 style="margin:0 0 6px;">🤝 Ser socio fundador (ahora)</h2>
+        <p class="muted" style="margin:0;line-height:1.6;">
+          Estás entrando en la etapa donde el apoyo vale el doble: acelera decisiones, financia iteraciones
+          y define el estándar de la comunidad.
+        </p>
+
+        <ul class="list">
+          <li>
+            <div class="dot"></div>
+            <div>
+              <b>Acceso anticipado</b>
+              <span>Probás ComVi 0.2 antes del público general y sugerís mejoras.</span>
+            </div>
+          </li>
+          <li>
+            <div class="dot"></div>
+            <div>
+              <b>Comunidad fundadora</b>
+              <span>Grupo privado para feedback, votaciones y prioridades del roadmap.</span>
+            </div>
+          </li>
+          <li>
+            <div class="dot"></div>
+            <div>
+              <b>Reconocimiento</b>
+              <span>Mención (opcional) como fundador/a en el sitio y comunicaciones del proyecto.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="ctaBox reveal">
+        <h2>❤️ Aportá y acelerá el lanzamiento</h2>
+        <p>
+          Tu donación sostiene infraestructura, diseño, seguridad y el salto a la versión con login.
+        </p>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <a class="btn primary" href="https://link.mercadopago.com.ar/donacomvi" target="_blank" rel="noopener">Donar con MercadoPago</a>
+          <a class="btn" href="mailto:admcomvi@gmail.com">📩 Contacto</a>
+        </div>
+
+        <div class="muted" style="margin-top:10px;">
+          Si querés sumarte como socio fundador: escribinos y te contamos cómo participar en la etapa MVP.
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div>ComVi · Comunidad viajera</div>
+      <small>© <span id="year"></span> · Sitio en construcción · Argentina</small>
+    </footer>
+  </div>
+
+  <script>
+    // Year
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // Reveal on scroll (no libs)
+    (function(){
+      const els = Array.from(document.querySelectorAll(".reveal"));
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries){
+          if (e.isIntersecting){
+            e.target.classList.add("on");
+            io.unobserve(e.target);
+          }
+        }
+      }, { threshold: 0.12 });
+
+      els.forEach(el => io.observe(el));
+    })();
+
+    // Floating sparks
+    (function(){
+      const bg = document.querySelector(".bg");
+      const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!bg || reduced) return;
+
+      const count = 18;
+      for (let i=0;i<count;i++){
+        const s = document.createElement("div");
+        s.className = "spark";
+        const left = Math.random()*100;
+        const size = 6 + Math.random()*10;
+        const dur = 10 + Math.random()*18;
+        const delay = -Math.random()*dur;
+        s.style.left = left.toFixed(2) + "vw";
+        s.style.width = size + "px";
+        s.style.height = size + "px";
+        s.style.opacity = (0.18 + Math.random()*0.22).toFixed(2);
+        s.style.animationDuration = dur.toFixed(2) + "s";
+        s.style.animationDelay = delay.toFixed(2) + "s";
+        bg.appendChild(s);
+      }
+    })();
+  </script>
 </body>
 </html>
