@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="./assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="./assets/FAVICON.png">
+  <title>ComVi · Comunidad Viajera</title>
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #fafafa; }
+    header { background: #0d6efd; color: white; padding: 12px; text-align: center; }
+    section { padding: 12px; }
+    input, select, button, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    button { background: #0d6efd; color: white; border: none; cursor: pointer; }
+    button.secondary { background: #6c757d; }
+    button:disabled { background:#adb5bd; cursor:not-allowed; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .viaje {
+      background: white;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+      border-left: 6px solid #0d6efd;
+    }
+    .ruta { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
+    .chip { font-size: 12px; background: #f1f3f5; padding: 4px 8px; border-radius: 999px; }
+    .muted { color: #666; font-size: 12px; }
+    .ad {
+      background: #f0f0f0; padding: 10px; margin: 10px;
+      text-align: center; border-radius: 8px; font-size: 14px;
+    }
+    footer { font-size: 12px; text-align: center; color: #666; padding: 10px; }
+
+    .inlineCheck {
+      display:flex; align-items:flex-start; gap:8px;
+      background:#fff; border:1px solid #ddd; padding:10px; border-radius:8px;
+      margin: 6px 0;
+    }
+    .inlineCheck input { width:auto; margin-top:2px; }
+
+    .manageLinkBox{
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:10px;
+      padding:10px;
+      margin-top:10px;
+      display:none;
+    }
+    .manageLinkBox code{
+      display:block;
+      background:#f6f8fa;
+      padding:10px;
+      border-radius:8px;
+      overflow:auto;
+      word-break:break-all;
+    }
+    .btnCopy{
+      margin-top:8px;
+      background:#198754;
+    }
+
+    .topActions{
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      margin-top:8px;
+      flex-wrap:wrap;
+    }
+    .topActions a{
+      display:inline-block;
+      background: rgba(255,255,255,.15);
+      color:#fff;
+      text-decoration:none;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+    }
+
+    .infoBox{
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:10px;
+      padding:10px;
+      margin: 10px 12px 0;
+      font-size:13px;
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+    <img src="./assets/LOGO.png" alt="ComVi" style="height:34px;width:auto;">
+    <div>
+      <h2 style="margin:0;">ComVi</h2>
+      <div style="font-size:12px;opacity:.9;">Comunidad Viajera</div>
+    </div>
+  </div>
+
+  <div class="topActions">
+    <a href="mailto:admcomvi@gmail.com">📢 Anunciar</a>
+    <a href="mailto:admcomvi@gmail.com?subject=Sugerencia%20ComVi%20MVP%200.1.1">✉️ Sugerencias</a>
+    <a href="https://link.mercadopago.com.ar/donacomvi" target="_blank">❤️ Donar</a>
+  </div>
+</header>
+
+
+<!-- PUBLICIDAD SUPERIOR -->
+<div class="ad">
+  <strong>Publicidad</strong><br>
+  Servicio Técnico 💻 · 
+  <a href="https://wa.me/5491158025832?text=Hola%21%20Te%20escribo%20desde%20ComVi%20👋%0AVi%20la%20publicidad%20en%20la%20plataforma."
+     target="_blank"
+     style="text-decoration:none;font-weight:bold;">
+     WhatsApp 11 5802-5832
+  </a>
+  · 📲 Asistencia Remota
+</div>
+
+
+<section>
+  <h3>📍 Publicar viaje (conductor)</h3>
+
+  <div class="row">
+    <input type="text" id="origen" placeholder="Origen (ej: CABA / La Plata)">
+    <input type="text" id="destino" placeholder="Destino (ej: Gesell)">
+  </div>
+
+  <div class="row">
+    <input type="date" id="fecha">
+    <input type="time" id="hora">
+  </div>
+
+  <div class="inlineCheck" title="Marcá esto si la hora no es exacta (ej: cerca de las 17)">
+    <input type="checkbox" id="horaAprox">
+    <label for="horaAprox">
+      <strong>Horario aproximado</strong><br>
+      <span class="muted">Si no es exacto, marcá esto (ej: “cerca de las 17”).</span>
+    </label>
+  </div>
+
+  <div class="row">
+    <input type="number" id="asientos" placeholder="💺 Lugares disponibles (ej: 2)" min="1">
+  </div>
+
+  <div class="inlineCheck" title="Marcá esto si el precio se define por chat">
+    <input type="checkbox" id="precioAConvenir" />
+    <label for="precioAConvenir">
+      <strong>Precio a convenir</strong><br>
+      <span class="muted">Se coordina por WhatsApp (opcional).</span>
+    </label>
+  </div>
+
+  <input type="number" id="precio" placeholder="💰 Precio por asiento (ej: 30000)" min="0">
+
+  <select id="equipaje">
+    <option value="">🧳 Equipaje (opcional)</option>
+    <option value="mochila">🎒 Mochila</option>
+    <option value="bolso">🧳 Bolso chico</option>
+    <option value="valija">🧳 Valija</option>
+    <option value="aconvenir">🤝 A convenir</option>
+  </select>
+
+  <textarea id="detalles" maxlength="220"
+    placeholder="📝 Detalles (punto de encuentro, paradas, equipaje, música, etc.) máx 220"></textarea>
+
+  <input type="tel" id="telefono" placeholder="WhatsApp del conductor (no se publica). El admin te conecta." inputmode="numeric">
+
+  <button id="btnPublicar" type="button" onclick="publicarViaje()">Publicar viaje</button>
+  <div class="muted">Al publicar, te damos un <strong>link privado</strong> para gestionar asientos, pausar y editar.</div>
+
+  <div class="manageLinkBox" id="manageLinkBox">
+    <strong>🔐 Link privado del conductor (guardalo)</strong>
+    <div class="muted" style="margin-top:4px;">
+      Con este link podés administrar tu publicación. Si lo perdés, pedíselo al admin.
+    </div>
+    <code id="manageLink"></code>
+    <button class="btnCopy" type="button" onclick="copiarLink()">📋 Copiar link</button>
+    <div class="muted" id="copyMsg" style="margin-top:6px;"></div>
+  </div>
+</section>
+
+<!-- DONACIÓN -->
+<section>
+  <a href="https://link.mercadopago.com.ar/donacomvi"
+     target="_blank"
+     style="display:block;padding:12px;background:#009ee3;color:white;
+            text-align:center;border-radius:8px;text-decoration:none;">
+    ❤️ Donar para sostener ComVi
+  </a>
+</section>
+
+<!-- PUBLICIDAD MEDIA -->
+<div class="ad">
+  ¿Querés anunciar acá?<br>
+  📧 <a href="mailto:admcomvi@gmail.com">admcomvi@gmail.com</a>
+</div>
+
+<div class="infoBox">
+  <strong>Importante:</strong> por seguridad, ComVi <strong>no publica teléfonos</strong>.
+  Cuando tocás “Coordinar por WhatsApp”, el admin te conecta con el conductor.
+</div>
+
+<section>
+  <h3>🗺️ Viajes disponibles</h3>
+  <div id="listaViajes"></div>
+</section>
+ 
+<footer>
+  Visitas: <span id="contador"></span><br>
+  <span class="muted">
+    ComVi · Comunidad Viajera · MVP 0.1.2 ·
+    <a href="./terminos.html" style="color:#666;text-decoration:underline;">
+      Términos y Privacidad
+    </a>
+  </span>
+</footer>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script src="./auth.js"></script>
+
+<script>
+/* ===============================
+   CONFIG SUPABASE
+================================ */
+function obtenerUserHash() {
+  let hash = localStorage.getItem("comvi_user_hash");
+  if (!hash) {
+    // UUID compatible con navegadores viejos
+    hash = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+    localStorage.setItem("comvi_user_hash", hash);
+  }
+  return hash;
+}
+
+const sb = COMVI_AUTH.sb;
+
+// ADMIN WhatsApp intermediario
+const telefonoAdmin = COMVI_CONFIG.TELEFONO_ADMIN;
+
+let VIAJES_CACHE = [];
+
+/* ===============================
+   FECHA LOCAL (evita corrimientos)
+================================ */
+function toLocalISOString(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return null;
+
+  // date "YYYY-MM-DD"
+  const dparts = String(dateStr).split("-");
+  if (dparts.length !== 3) return null;
+
+  const year = parseInt(dparts[0], 10);
+  const month = parseInt(dparts[1], 10) - 1; // 0-based
+  const day = parseInt(dparts[2], 10);
+
+  // time "HH:MM" or "HH:MM:SS"
+  const tparts = String(timeStr).split(":");
+  if (tparts.length < 2) return null;
+
+  const hour = parseInt(tparts[0], 10);
+  const minute = parseInt(tparts[1], 10);
+  const second = tparts.length >= 3 ? parseInt(tparts[2], 10) : 0;
+
+  const dt = new Date(year, month, day, hour, minute, second);
+
+  if (isNaN(dt.getTime())) return null;
+
+  const pad = n => String(n).padStart(2, "0");
+
+  const tzMin = -dt.getTimezoneOffset();
+  const sign = tzMin >= 0 ? "+" : "-";
+  const hh = pad(Math.floor(Math.abs(tzMin) / 60));
+  const mm = pad(Math.abs(tzMin) % 60);
+
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}${sign}${hh}:${mm}`;
+}
+
+
+/* ===============================
+   HELPERS
+================================ */
+function formatearFecha(fechaISO) {
+  const d = new Date(fechaISO);
+  return d.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
+}
+function escapeHtml(str) {
+  return (str || "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
+/* ===============================
+   UI (precio a convenir)
+================================ */
+function setupPrecioAConvenir() {
+  const chk = document.getElementById("precioAConvenir");
+  const precioInput = document.getElementById("precio");
+
+  function apply() {
+    const on = chk.checked;
+    precioInput.disabled = on;
+    if (on) precioInput.value = "";
+  }
+  chk.addEventListener("change", apply);
+  apply();
+}
+
+/* ===============================
+   VISITAS
+================================ */
+async function registrarVisita() {
+  const { error } = await sb
+    .from("visitas")
+    .insert([{ user_hash: obtenerUserHash() }]);
+  if (error) console.error("Error guardando visita", error);
+}
+
+async function cargarContador() {
+  const { count, error } = await sb
+    .from("visitas")
+    .select("*", { count: "exact", head: true });
+  if (error) return console.error("Error contando visitas", error);
+  document.getElementById("contador").innerText = count ?? 0;
+}
+
+/* ===============================
+   MOSTRAR VIAJES
+================================ */
+async function mostrarViajes() {
+  const { data, error } = await sb
+    .from("viajes")
+    .select("*")
+    .eq("activo", true)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert("Error cargando viajes");
+    console.error(error);
+    return;
+  }
+
+  VIAJES_CACHE = data || [];
+  renderViajes();
+}
+
+function renderViajes() {
+  const contenedor = document.getElementById("listaViajes");
+  contenedor.innerHTML = "";
+
+  if (VIAJES_CACHE.length === 0) {
+    contenedor.innerHTML = `<div class="muted">Todavía no hay viajes publicados.</div>`;
+    return;
+  }
+
+  const disponibles = VIAJES_CACHE.filter(v =>
+    v.asientos !== null && v.asientos !== undefined && v.asientos > 0
+  );
+
+  const completos = VIAJES_CACHE.filter(v =>
+    v.asientos !== null && v.asientos !== undefined && v.asientos <= 0
+  );
+
+  const sinDato = VIAJES_CACHE.filter(v =>
+    v.asientos === null || v.asientos === undefined
+  );
+
+  const ordenados = [...disponibles, ...completos, ...sinDato];
+
+  ordenados.forEach(v => {
+    const div = document.createElement("div");
+    div.className = "viaje";
+
+    const chips = [];
+
+    let completo = false;
+    if (v.asientos !== null && v.asientos !== undefined) {
+      if (v.asientos > 0) chips.push(`💺 ${v.asientos} lugares libres`);
+      else {
+        chips.push(`💺 Completo (sin lugares)`);
+        completo = true;
+      }
+    } else {
+      chips.push(`💺 (sin dato)`);
+      completo = true;
+    }
+
+    const precioTxt = (v.precio === null || v.precio === undefined)
+      ? `💰 A convenir`
+      : `💰 $${v.precio}`;
+    chips.push(precioTxt);
+
+    if (v.equipaje) chips.push(`🧳 ${v.equipaje}`);
+    if (v.hora_aprox) chips.push("🕒 aprox");
+
+    const chipsHtml = `<div class="chips">${chips.map(c => `<span class="chip">${c}</span>`).join("")}</div>`;
+
+    div.innerHTML = `
+      <div class="ruta">${escapeHtml(v.origen)} → ${escapeHtml(v.destino)}</div>
+      <div>🕒 ${formatearFecha(v.fecha_hora)}${v.hora_aprox ? ' <span class="muted">(aprox)</span>' : ''}</div>
+      ${chipsHtml}
+      ${v.comentario ? `<div style="margin-top:6px;">📝 ${escapeHtml(v.comentario)}</div>` : ""}
+
+      <div style="margin-top:10px;">
+        ${
+          completo
+            ? `<button disabled style="background:#adb5bd;cursor:not-allowed;">🚫 Completo (sin lugares)</button>
+               <div class="muted" style="margin-top:6px;">Este viaje ya tiene los asientos reservados.</div>`
+            : `<button onclick="contactarAdmin(${v.id})">💬 Coordinar por WhatsApp</button>
+               <div class="muted" style="margin-top:6px;">El admin te conecta con el conductor (sin teléfonos públicos).</div>`
+        }
+      </div>
+    `;
+
+    contenedor.appendChild(div);
+  });
+}
+
+/* ===============================
+   CONTACTO (admin intermediario)
+================================ */
+async function contactarAdmin(viajeId) {
+  const userHash = obtenerUserHash();
+  const v = VIAJES_CACHE.find(x => x.id === viajeId);
+
+  const { error } = await sb
+    .from("contactos")
+    .insert([{
+      viaje_id: viajeId,
+      user_hash: userHash,
+      estado: "nuevo"
+    }]);
+
+  if (error) {
+    alert("Error registrando contacto");
+    console.error(error);
+    return;
+  }
+
+  const precioTxt = (v?.precio === null || v?.precio === undefined) ? "A convenir" : `$${v?.precio}`;
+
+  const mensajePlano =
+`Hola! Quiero coordinar un viaje publicado en ComVi.
+
+Ruta: ${v?.origen} → ${v?.destino}
+Fecha/Hora: ${v?.fecha_hora ? formatearFecha(v.fecha_hora) : "-"}${v?.hora_aprox ? " (aprox)" : ""}
+Lugares: ${v?.asientos ?? "-"}
+Precio: ${precioTxt}
+Equipaje: ${v?.equipaje ?? "-"}
+Detalles: ${v?.comentario ?? "-"}
+ID publicación: ${v?.id}`;
+
+  const mensaje = encodeURIComponent(mensajePlano);
+  window.open(`https://wa.me/${telefonoAdmin}?text=${mensaje}`, "_blank");
+}
+
+/* ===============================
+   LINK DE GESTIÓN (chofer)
+================================ */
+function baseDirUrl() {
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.search = "";
+  url.pathname = url.pathname.replace(/\/[^\/]*$/, "/");
+  return url.toString().replace(/\/$/, "");
+}
+async function copiarLink() {
+  const link = document.getElementById("manageLink").innerText;
+  try {
+    await navigator.clipboard.writeText(link);
+    document.getElementById("copyMsg").innerText = "Link copiado ✅";
+  } catch (e) {
+    document.getElementById("copyMsg").innerText = "No pude copiar (tu navegador bloqueó). Copialo manualmente.";
+  }
+}
+
+/* ===============================
+   PUBLICAR VIAJE (hardening)
+================================ */
+async function publicarViaje() {
+  const btn = document.getElementById("btnPublicar");
+  btn.disabled = true;
+  const prevTxt = btn.textContent;
+  btn.textContent = "Publicando…";
+
+  try {
+    const origen = document.getElementById("origen").value.trim();
+    const destino = document.getElementById("destino").value.trim();
+    const fecha = document.getElementById("fecha").value;
+    const hora = document.getElementById("hora").value;
+    const telefono = document.getElementById("telefono").value.trim();
+
+    const horaAprox = document.getElementById("horaAprox").checked;
+    const asientos = parseInt(document.getElementById("asientos").value, 10) || null;
+
+    const precioAConvenir = document.getElementById("precioAConvenir").checked;
+    const precio = precioAConvenir ? null : (parseInt(document.getElementById("precio").value, 10) || null);
+
+    const equipaje = document.getElementById("equipaje").value || null;
+    const detalles = document.getElementById("detalles").value.trim() || null;
+
+    if (!origen || !destino || !fecha || !hora || !telefono) {
+      alert("Completá Origen, Destino, Fecha, Hora y WhatsApp del conductor");
+      return;
+    }
+    if (origen.length < 3 || destino.length < 3) {
+      alert("Origen y destino deben tener al menos 3 caracteres.");
+      return;
+    }
+
+    const telDigits = telefono.replace(/\D/g, "");
+    if (telDigits.length < 10) {
+      alert("Ingresá un WhatsApp válido (solo números, con código de área).");
+      return;
+    }
+
+    if (!asientos || asientos < 1) {
+      alert("Indicá cuántos lugares disponibles hay");
+      return;
+    }
+    if (precio !== null && precio < 0) {
+      alert("El precio no puede ser negativo");
+      return;
+    }
+
+    // Validar que sea futuro (con margen)
+    const d = new Date(`${fecha}T${hora}:00`);
+    const ahora = new Date();
+    const margenMin = 10; // minutos
+    if (d.getTime() < (ahora.getTime() - margenMin * 60 * 1000)) {
+      alert("La fecha/hora parece estar en el pasado. Revisala por favor.");
+      return;
+    }
+//debug temporal fecha hora error log
+    console.log("DEBUG fecha/hora:", { fecha, hora });
+
+    
+    const fechaHoraISO = toLocalISOString(fecha, hora);
+       if (!fechaHoraISO) {
+         alert(`Fecha u hora inválida.\nfecha="${fecha}"\nhora="${hora}"`);
+         return;
+       }
+
+  
+    const editToken = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+       const r = Math.random() * 16 | 0;
+       const v = c === 'x' ? r : (r & 0x3 | 0x8);
+       return v.toString(16);
+    });
+
+
+    const payload = {
+      origen,
+      destino,
+      fecha_hora: fechaHoraISO,
+      telefono,
+      tipo: "chofer",
+      asientos,
+      precio,
+      equipaje,
+      hora_aprox: horaAprox,
+      comentario: detalles,
+      punto_encuentro: null,
+      activo: true,
+      edit_token: editToken
+    };
+
+    const { data, error } = await sb
+      .from("viajes")
+      .insert([payload])
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("SUPABASE ERROR:", error);
+      alert("Error al publicar");
+      return;
+    }
+
+    alert("Viaje publicado ✅");
+
+    const id = data?.id;
+    if (id) {
+      const link = `${baseDirUrl()}/chofer.html?viaje=${encodeURIComponent(id)}&token=${encodeURIComponent(editToken)}`;
+      document.getElementById("manageLink").innerText = link;
+      document.getElementById("manageLinkBox").style.display = "block";
+      document.getElementById("copyMsg").innerText = "";
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }
+
+    document.getElementById("origen").value = "";
+    document.getElementById("destino").value = "";
+    document.getElementById("fecha").value = "";
+    document.getElementById("hora").value = "";
+    document.getElementById("horaAprox").checked = false;
+    document.getElementById("asientos").value = "";
+    document.getElementById("precioAConvenir").checked = false;
+    document.getElementById("precio").value = "";
+    document.getElementById("equipaje").value = "";
+    document.getElementById("detalles").value = "";
+    document.getElementById("telefono").value = "";
+
+    setupPrecioAConvenir();
+    mostrarViajes();
+
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevTxt;
+  }
+}
+
+/* ===============================
+   INIT
+================================ */
+window.addEventListener("load", () => {
+  setupPrecioAConvenir();
+  registrarVisita();
+  cargarContador();
+  mostrarViajes();
+});
+</script>
+</body>
+</html>
