@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ComVi — Comunidad Viajera</title>
+  <meta name="description" content="ComVi es una comunidad viajera para ordenar viajes compartidos, conectar personas y dar visibilidad a comercios y servicios del camino." />
+  <meta property="og:title" content="ComVi — Comunidad Viajera" />
+  <meta property="og:description" content="Probá la versión preliminar de ComVi, sumate como fundador o publicá tu comercio en la comunidad viajera." />
+  <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#070b18" />
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/favicon.ico" />
@@ -15,18 +20,22 @@
       --c1:#0d6efd;
       --c2:#00d4ff;
       --c3:#7c3aed;
+      --ok:#22c55e;
+      --warn:#facc15;
       --txt:#eaf2ff;
       --muted:#a9b7d0;
-      --card: rgba(255,255,255,.06);
-      --card2: rgba(255,255,255,.10);
+      --soft:#d9e7ff;
+      --card: rgba(255,255,255,.065);
+      --card2: rgba(255,255,255,.11);
       --stroke: rgba(255,255,255,.14);
       --shadow: 0 10px 40px rgba(0,0,0,.35);
-      --radius: 18px;
+      --radius: 20px;
       --max: 1100px;
     }
 
     *{ box-sizing:border-box; }
-    html,body{ height:100%; }
+    html{ scroll-behavior:smooth; }
+    html,body{ min-height:100%; }
     body{
       margin:0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
@@ -36,6 +45,18 @@
                   radial-gradient(900px 600px at 60% 80%, rgba(0,212,255,.18), transparent 55%),
                   linear-gradient(180deg, var(--bg1), var(--bg2));
       overflow-x:hidden;
+    }
+
+    .muted{ color:var(--muted); }
+    .sr-only{
+      position:absolute;
+      width:1px;
+      height:1px;
+      padding:0;
+      margin:-1px;
+      overflow:hidden;
+      clip:rect(0,0,0,0);
+      border:0;
     }
 
     /* --- Ambient animation layer --- */
@@ -67,10 +88,10 @@
       70%{ transform: translate3d(-30px, 20px, 0) scale(.98); }
     }
 
-    /* floating particles */
     .spark {
       position:absolute;
-      width: 10px; height: 10px;
+      width: 10px;
+      height: 10px;
       border-radius: 999px;
       background: rgba(255,255,255,.35);
       filter: blur(1px);
@@ -95,8 +116,8 @@
       position: sticky;
       top:0;
       z-index: 3;
-      backdrop-filter: blur(10px);
-      background: rgba(7,11,24,.45);
+      backdrop-filter: blur(12px);
+      background: rgba(7,11,24,.55);
       border-bottom: 1px solid rgba(255,255,255,.08);
     }
     .topbar-inner{
@@ -115,9 +136,10 @@
       gap:10px;
       text-decoration:none;
       color:inherit;
+      min-width: 180px;
     }
     .brand img{
-      height: 34px;
+      height: 36px;
       width:auto;
       display:block;
       filter: drop-shadow(0 6px 18px rgba(0,0,0,.35));
@@ -134,43 +156,48 @@
     .btn{
       appearance:none;
       border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
+      background: rgba(255,255,255,.07);
       color: var(--txt);
       padding: 10px 12px;
-      border-radius: 12px;
+      border-radius: 14px;
       text-decoration:none;
       font-size: 13px;
+      font-weight: 650;
       display:inline-flex;
       align-items:center;
+      justify-content:center;
       gap:8px;
       cursor:pointer;
-      transition: transform .15s ease, background .2s ease, border-color .2s ease;
+      transition: transform .15s ease, background .2s ease, border-color .2s ease, filter .2s ease;
       user-select:none;
+      min-height: 42px;
     }
-    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.22); }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.24); }
     .btn.primary{
-      background: linear-gradient(135deg, rgba(13,110,253,.95), rgba(0,212,255,.70));
+      background: linear-gradient(135deg, rgba(13,110,253,.98), rgba(0,212,255,.72));
       border-color: rgba(255,255,255,.18);
       box-shadow: 0 14px 40px rgba(13,110,253,.25);
       color: #061022;
-      font-weight: 700;
+      font-weight: 800;
     }
-    .btn.primary:hover{ filter: brightness(1.02); }
+    .btn.success{
+      background: linear-gradient(135deg, rgba(34,197,94,.95), rgba(0,212,255,.55));
+      color:#04110b;
+      border-color: rgba(255,255,255,.18);
+      box-shadow: 0 14px 40px rgba(34,197,94,.16);
+    }
+    .btn.ghost{ background: rgba(255,255,255,.045); }
+    .btn.full{ width:100%; }
+    .btn:hover{ filter: brightness(1.04); }
 
     .hero{
       max-width: var(--max);
       margin: 0 auto;
-      padding: 56px 18px 28px;
+      padding: 58px 18px 28px;
       display:grid;
-      grid-template-columns: 1.15fr .85fr;
+      grid-template-columns: 1.08fr .92fr;
       gap: 22px;
-      align-items:start;
-    }
-
-    @media (max-width: 900px){
-      .hero{ grid-template-columns: 1fr; padding-top: 34px; }
-      .top-actions{ justify-content:stretch; }
-      .btn{ flex:1; justify-content:center; }
+      align-items:center;
     }
 
     .pill{
@@ -178,33 +205,42 @@
       gap:8px;
       align-items:center;
       font-size: 12px;
-      color: var(--muted);
-      background: rgba(255,255,255,.06);
+      color: var(--soft);
+      background: rgba(255,255,255,.07);
       border: 1px solid rgba(255,255,255,.12);
       padding: 8px 12px;
       border-radius: 999px;
       width: fit-content;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
     }
+    .pill.warn{ color:#fff7d6; border-color: rgba(250,204,21,.28); background: rgba(250,204,21,.08); }
 
     h1{
-      margin: 14px 0 10px;
-      font-size: clamp(30px, 4.2vw, 52px);
+      margin: 16px 0 12px;
+      font-size: clamp(31px, 4.6vw, 58px);
       line-height: 1.02;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.035em;
     }
     .lead{
       margin: 0 0 16px;
-      color: rgba(234,242,255,.88);
-      font-size: 16px;
-      line-height:1.65;
-      max-width: 62ch;
+      color: rgba(234,242,255,.9);
+      font-size: 17px;
+      line-height:1.68;
+      max-width: 64ch;
     }
+    .lead b{ color:#ffffff; }
 
     .hero-cta{
       display:flex;
       gap:12px;
       flex-wrap:wrap;
-      margin-top: 18px;
+      margin-top: 20px;
+    }
+    .hero-note{
+      margin: 12px 0 0;
+      color: rgba(234,242,255,.70);
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     .card{
@@ -213,30 +249,115 @@
       border-radius: var(--radius);
       box-shadow: var(--shadow);
     }
+    .panel{ padding: 18px; }
 
-    .panel{
-      padding: 18px;
+    .phone-preview{
+      position:relative;
+      padding: 16px;
+      overflow:hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.115), rgba(255,255,255,.055));
     }
-
-    .kpis{
+    .phone-preview::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: radial-gradient(550px 300px at 15% 10%, rgba(0,212,255,.18), transparent 55%),
+                  radial-gradient(420px 280px at 85% 10%, rgba(124,58,237,.16), transparent 60%);
+      pointer-events:none;
+    }
+    .app-top{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom: 14px;
+    }
+    .app-title{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .app-logo{
+      width:34px;
+      height:34px;
+      border-radius:12px;
       display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 12px;
+      place-items:center;
+      background: linear-gradient(135deg, rgba(13,110,253,.95), rgba(0,212,255,.70));
+      color:#061022;
+      font-weight:900;
+      box-shadow: 0 12px 25px rgba(13,110,253,.22);
     }
-    .kpi{
-      padding: 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
+    .app-title strong{ display:block; font-size:14px; }
+    .app-title span{ display:block; font-size:12px; color:var(--muted); }
+    .bubble-list{
+      position:relative;
+      display:grid;
+      gap:10px;
     }
-    .kpi strong{ display:block; font-size: 14px; }
-    .kpi span{ color: var(--muted); font-size: 12px; }
+    .bubble{
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.075);
+      border-radius:18px;
+      padding:12px;
+    }
+    .bubble.offer{
+      border-left:4px solid var(--c2);
+    }
+    .bubble.need{
+      border-left:4px solid var(--c3);
+      margin-left: 18px;
+    }
+    .bubble.sponsor{
+      border-left:4px solid var(--ok);
+      background:rgba(34,197,94,.08);
+    }
+    .bubble small{
+      color:var(--muted);
+      display:block;
+      margin-top:4px;
+      line-height:1.45;
+    }
+    .chiprow{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+    .chip{
+      font-size:11px;
+      color:rgba(234,242,255,.86);
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.055);
+      padding:5px 8px;
+      border-radius:999px;
+    }
 
     .section{
       max-width: var(--max);
       margin: 0 auto;
-      padding: 22px 18px;
+      padding: 24px 18px;
+      width:100%;
+    }
+    .section-title{
+      margin:0 0 12px;
+      display:flex;
+      align-items:end;
+      justify-content:space-between;
+      gap:18px;
+    }
+    .section-title h2{
+      margin:0;
+      font-size: clamp(22px, 3vw, 34px);
+      letter-spacing:-.025em;
+    }
+    .section-title p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.55;
+      max-width: 58ch;
+      font-size:14px;
     }
 
     .grid3{
@@ -244,32 +365,31 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
     }
-    @media (max-width: 900px){
-      .grid3{ grid-template-columns: 1fr; }
+    .grid2{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
     }
 
     .feature{
-      padding: 16px;
+      padding: 17px;
       border-radius: var(--radius);
       border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
-      min-height: 120px;
+      background: rgba(255,255,255,.055);
+      min-height: 138px;
     }
-    .feature h3{ margin: 0 0 8px; font-size: 15px; }
-    .feature p{ margin:0; color: var(--muted); line-height:1.55; font-size: 13px; }
+    .feature h3{ margin: 0 0 8px; font-size: 16px; }
+    .feature p{ margin:0; color: var(--muted); line-height:1.58; font-size: 13px; }
 
     .split{
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
-      align-items: start;
-    }
-    @media (max-width: 900px){
-      .split{ grid-template-columns: 1fr; }
+      align-items: stretch;
     }
 
     .list{
-      margin: 10px 0 0;
+      margin: 12px 0 0;
       padding: 0;
       list-style: none;
       display:grid;
@@ -280,12 +400,13 @@
       gap: 10px;
       align-items:flex-start;
       padding: 12px;
-      border-radius: 14px;
-      background: rgba(255,255,255,.05);
+      border-radius: 16px;
+      background: rgba(255,255,255,.055);
       border: 1px solid rgba(255,255,255,.10);
     }
     .dot{
-      width: 10px; height: 10px;
+      width: 10px;
+      height: 10px;
       border-radius: 999px;
       background: linear-gradient(135deg, var(--c1), var(--c2));
       margin-top: 6px;
@@ -296,14 +417,51 @@
     .list span{ color: var(--muted); font-size: 13px; line-height: 1.5; }
 
     .ctaBox{
-      padding: 18px;
+      padding: 20px;
       border-radius: var(--radius);
       border: 1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      background: linear-gradient(180deg, rgba(255,255,255,.11), rgba(255,255,255,.06));
       box-shadow: var(--shadow);
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:14px;
     }
-    .ctaBox h2{ margin:0 0 6px; font-size: 18px; }
-    .ctaBox p{ margin:0 0 12px; color: var(--muted); line-height:1.6; }
+    .ctaBox h2{ margin:0 0 6px; font-size: 21px; letter-spacing:-.015em; }
+    .ctaBox p{ margin:0; color: var(--muted); line-height:1.6; }
+
+    .price-row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:14px;
+    }
+    .price{
+      border-radius:18px;
+      padding:14px;
+      border:1px solid rgba(255,255,255,.11);
+      background:rgba(255,255,255,.055);
+    }
+    .price strong{ display:block; font-size:15px; margin-bottom:5px; }
+    .price span{ display:block; color:var(--muted); font-size:13px; line-height:1.5; }
+    .price.mark{
+      border-color: rgba(34,197,94,.26);
+      background: rgba(34,197,94,.075);
+    }
+
+    .banner{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:16px;
+      align-items:center;
+      padding:18px;
+      border-radius:22px;
+      background: linear-gradient(135deg, rgba(13,110,253,.24), rgba(0,212,255,.10), rgba(124,58,237,.14));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:var(--shadow);
+    }
+    .banner h2{ margin:0 0 6px; font-size:21px; }
+    .banner p{ margin:0; color:rgba(234,242,255,.78); line-height:1.55; }
 
     .footer{
       margin-top: 26px;
@@ -313,6 +471,7 @@
       border-top: 1px solid rgba(255,255,255,.08);
       background: rgba(0,0,0,.10);
     }
+    .footer a{ color:var(--txt); text-decoration:none; }
     .footer small{ display:block; margin-top: 8px; color: rgba(234,242,255,.55); }
 
     /* --- Reveal on scroll --- */
@@ -326,8 +485,22 @@
       transform: translateY(0);
     }
 
-    /* Reduce motion */
+    @media (max-width: 900px){
+      .topbar-inner{ align-items:flex-start; flex-direction:column; }
+      .top-actions{ width:100%; display:grid; grid-template-columns:1fr 1fr; }
+      .top-actions .btn.primary{ grid-column: span 2; }
+      .hero{ grid-template-columns: 1fr; padding-top: 34px; }
+      .hero-cta{ display:grid; grid-template-columns:1fr; }
+      .grid3,.grid2,.split{ grid-template-columns: 1fr; }
+      .section-title{ display:block; }
+      .section-title p{ margin-top:8px; }
+      .banner{ grid-template-columns:1fr; }
+      .price-row{ grid-template-columns:1fr; }
+      .btn{ width:100%; }
+    }
+
     @media (prefers-reduced-motion: reduce){
+      html{ scroll-behavior:auto; }
       .blob, .spark{ animation: none !important; }
       .reveal{ opacity:1 !important; transform:none !important; transition:none !important; }
       .btn{ transition:none !important; }
@@ -336,6 +509,8 @@
 </head>
 
 <body>
+  <a class="sr-only" href="#contenido">Saltar al contenido principal</a>
+
   <!-- Animated background -->
   <div class="bg" aria-hidden="true">
     <div class="blob b1"></div>
@@ -345,149 +520,277 @@
   </div>
 
   <div class="wrap">
-    <div class="topbar">
+    <header class="topbar">
       <div class="topbar-inner">
-        <a class="brand" href="#">
-          <img src="assets/LOGO.png" alt="ComVi">
+        <a class="brand" href="#inicio" aria-label="ComVi, Comunidad Viajera">
+          <img src="assets/LOGO.png" alt="ComVi" />
           <div class="name">
             <strong>ComVi</strong>
             <span>Comunidad viajera · Argentina</span>
           </div>
         </a>
 
-        <div class="top-actions">
-          <a class="btn" href="#fundadores">🤝 Socio fundador</a>
-          <a class="btn primary" href="https://link.mercadopago.com.ar/donacomvi" target="_blank" rel="noopener">❤️ Donar</a>
-        </div>
+        <nav class="top-actions" aria-label="Accesos principales">
+          <a class="btn ghost" href="#comercios">🏪 Comercios</a>
+          <a class="btn ghost" href="#fundadores">🤝 Fundadores</a>
+          <a class="btn primary" href="https://comunidadviajera.base44.app">🚗 Probar la app</a>
+        </nav>
       </div>
-    </div>
+    </header>
 
-    <!-- HERO -->
-    <section class="hero">
-      <div class="reveal">
-        <div class="pill">🚧 Sitio en desarrollo · Acceso anticipado por invitación</div>
+    <main id="contenido">
+      <!-- HERO -->
+      <section class="hero" id="inicio">
+        <div class="reveal">
+          <div class="pill warn">🚧 Versión preliminar en pruebas · Comunidad Viajera</div>
 
-        <h1>Estamos construyendo una aplicación para la comunidad viajera.</h1>
+          <h1>ComVi ordena los viajes compartidos que ya nacen en la comunidad.</h1>
 
-        <p class="lead">
-          ComVi nace para ordenar lo que hoy se coordina en grupos: publicar viajes, ver asientos disponibles,
-          y conectar personas de forma simple. Ahora estamos en etapa de construcción y validación.
-        </p>
+          <p class="lead">
+            Estamos construyendo una aplicación simple para <b>publicar viajes, encontrar asientos disponibles y conectar por WhatsApp</b>, sin perder el trato humano de los grupos.
+          </p>
 
-        <div class="hero-cta">
-          <a class="btn primary" href="https://link.mercadopago.com.ar/donacomvi" target="_blank" rel="noopener">❤️ Donar para sostener ComVi</a>
-          <a class="btn" href="#fundadores">Ver beneficios de fundador</a>
+          <p class="lead">
+            Hoy podés entrar a la versión preliminar, sumarte como fundador o publicar tu comercio para acompañar el crecimiento desde el inicio.
+          </p>
+
+          <div class="hero-cta">
+            <a class="btn primary" href="https://comunidadviajera.base44.app">🚗 Entrar a la versión preliminar</a>
+            <a class="btn success" href="#comercios">🏪 Publicar mi comercio</a>
+            <a class="btn ghost" href="#fundadores">🤝 Sumarme como fundador</a>
+          </div>
+
+          <p class="hero-note">
+            La app está en etapa MVP: algunas funciones pueden cambiar mientras validamos diseño, seguridad y experiencia real con usuarios.
+          </p>
         </div>
 
-        <p class="muted" style="margin-top:10px;">
-          Tu aporte acelera desarrollo, mejoras de seguridad y lanzamiento de la versión con login.
-        </p>
-      </div>
+        <aside class="card phone-preview reveal" aria-label="Vista conceptual de la aplicación ComVi">
+          <div class="app-top">
+            <div class="app-title">
+              <div class="app-logo">CV</div>
+              <div>
+                <strong>ComVi</strong>
+                <span>Feed viajero</span>
+              </div>
+            </div>
+            <div class="pill">MVP activo</div>
+          </div>
 
-      <aside class="card panel reveal">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+          <div class="bubble-list">
+            <div class="bubble offer">
+              <strong>🚗 Ofrezco viaje</strong>
+              <small>General Rodríguez → Costa Atlántica · Viernes 18:00</small>
+              <div class="chiprow">
+                <span class="chip">3 asientos</span>
+                <span class="chip">equipaje chico</span>
+                <span class="chip">WhatsApp</span>
+              </div>
+            </div>
+
+            <div class="bubble need">
+              <strong>🙋 Busco lugar</strong>
+              <small>Luján → CABA · Mañana por la mañana</small>
+              <div class="chiprow">
+                <span class="chip">flexible</span>
+                <span class="chip">1 pasajero</span>
+              </div>
+            </div>
+
+            <div class="bubble sponsor">
+              <strong>🏪 Comercio del camino</strong>
+              <small>Gomería, hospedaje, comida, mecánica, lavadero, almacén o servicio útil para viajeros.</small>
+              <div class="chiprow">
+                <span class="chip">publicidad fundadora</span>
+                <span class="chip">visibilidad temprana</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- WHAT -->
+      <section class="section reveal" id="que-es">
+        <div class="section-title">
+          <h2>¿Qué problema quiere resolver?</h2>
+          <p>ComVi no viene a reemplazar el contacto humano: viene a ordenar el ruido para que los viajes compartidos sean más fáciles de encontrar, publicar y coordinar.</p>
+        </div>
+
+        <div class="grid3">
+          <div class="feature card">
+            <h3>🚗 Viajes compartidos</h3>
+            <p>Un feed claro para publicar si ofrecés lugar o si estás buscando asiento, con origen, destino, fecha y detalles básicos.</p>
+          </div>
+          <div class="feature card">
+            <h3>💬 WhatsApp sigue siendo clave</h3>
+            <p>La coordinación final queda en manos de las personas. ComVi ayuda a encontrar, ordenar y conectar más rápido.</p>
+          </div>
+          <div class="feature card">
+            <h3>🧭 Comunidad + comercios</h3>
+            <p>El ecosistema también puede dar visibilidad a servicios útiles del camino: comida, hospedaje, talleres, gomerías y más.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- APP CTA -->
+      <section class="section reveal" id="app">
+        <div class="banner">
           <div>
-            <strong style="font-size:15px;">📌 En qué estamos</strong>
-            <div class="muted" style="margin-top:6px;line-height:1.6;">
-              MVP en marcha + pruebas reales. Próximo paso: ComVi 0.2 con login y protección anti-spam.
+            <h2>Probá la aplicación ahora</h2>
+            <p>Entrá a la versión preliminar desarrollada en Base44. Sirve para probar flujo, diseño, publicación y primeras interacciones antes de la versión final exportada a GitHub + Cloudflare + Supabase.</p>
+          </div>
+          <a class="btn primary" href="https://comunidadviajera.base44.app">Entrar a ComVi</a>
+        </div>
+      </section>
+
+      <!-- COMMERCE -->
+      <section class="section split reveal" id="comercios">
+        <div class="card panel">
+          <div class="pill">🏪 Oportunidad para comercios y servicios</div>
+          <h2 style="margin:14px 0 8px;">Publicá tu comercio en ComVi desde la etapa inicial</h2>
+          <p class="muted" style="margin:0;line-height:1.65;">
+            Queremos que la comunidad viajera encuentre lugares útiles, cercanos y recomendables. Si tenés un comercio o servicio que puede ayudar a viajeros, esta es la oportunidad de aparecer desde el comienzo.
+          </p>
+
+          <ul class="list">
+            <li>
+              <div class="dot"></div>
+              <div>
+                <b>Ganás visibilidad temprana</b>
+                <span>Tu comercio puede aparecer dentro de una comunidad que empieza a moverse y compartir rutas.</span>
+              </div>
+            </li>
+            <li>
+              <div class="dot"></div>
+              <div>
+                <b>Ayudás a financiar el desarrollo</b>
+                <span>La publicidad fundadora sostiene mejoras de seguridad, hosting, diseño y crecimiento.</span>
+              </div>
+            </li>
+            <li>
+              <div class="dot"></div>
+              <div>
+                <b>Ganamos todos</b>
+                <span>La app crece, los viajeros encuentran ayuda y los comercios llegan a gente que realmente puede necesitarlos.</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="ctaBox">
+          <div>
+            <h2>🏪 Publicidad fundadora</h2>
+            <p>
+              Ideal para hospedajes, talleres, gomerías, lavaderos, casas de comida, campings, estaciones de servicio, proveedurías, guías, turismo local y servicios del camino.
+            </p>
+            <div class="price-row">
+              <div class="price">
+                <strong>Publicación mensual</strong>
+                <span>Para probar la visibilidad sin compromiso largo.</span>
+              </div>
+              <div class="price mark">
+                <strong>Pago anual fundador</strong>
+                <span>Descuento especial por acompañar el proyecto desde el inicio.</span>
+              </div>
             </div>
           </div>
-          <div class="pill" style="white-space:nowrap;">⚡ Etapa MVP</div>
-        </div>
 
-        <div class="kpis">
-          <div class="kpi">
-            <strong>+ Organización</strong>
-            <span>menos ruido, más claridad</span>
-          </div>
-          <div class="kpi">
-            <strong>+ Confianza</strong>
-            <span>perfiles y reputación</span>
-          </div>
-          <div class="kpi">
-            <strong>+ Seguridad</strong>
-            <span>reducir estafas y spam</span>
-          </div>
-          <div class="kpi">
-            <strong>+ Comunidad</strong>
-            <span>mismo espíritu, mejor sistema</span>
+          <div style="display:grid;gap:10px;">
+            <a class="btn success full" href="https://comunidadviajera.base44.app">Publicar mi comercio ahora</a>
+            <a class="btn ghost full" href="mailto:admcomvi@gmail.com?subject=Quiero%20publicar%20mi%20comercio%20en%20ComVi&body=Hola%20ComVi%2C%20quiero%20publicar%20mi%20comercio%20en%20la%20aplicaci%C3%B3n.%0A%0ANombre%20del%20comercio%3A%0ACiudad%20%2F%20zona%3A%0ARubro%3A%0AWhatsApp%3A%0A">Consultar por comercio</a>
           </div>
         </div>
-      </aside>
-    </section>
+      </section>
 
-    <!-- FEATURES -->
-    <section class="section reveal" id="que">
-      <div class="grid3">
-        <div class="feature card">
-          <h3>🚗 Publicación simple</h3>
-          <p>Chofer publica origen/destino, fecha/hora, asientos y detalles. Sin vueltas.</p>
-        </div>
-        <div class="feature card">
-          <h3>🧭 Búsqueda clara</h3>
-          <p>Encontrás más rápido lo que necesitás, sin scrollear interminable en grupos.</p>
-        </div>
-        <div class="feature card">
-          <h3>🛡️ Próximo: login</h3>
-          <p>Perfiles, reputación y controles para reducir spam y mejorar la confianza.</p>
-        </div>
-      </div>
-    </section>
+      <!-- FOUNDERS -->
+      <section class="section split reveal" id="fundadores">
+        <div class="card panel">
+          <div class="pill">🤝 Comunidad fundadora</div>
+          <h2 style="margin:14px 0 8px;">Unite como fundador y ayudá a sacar ComVi a la ruta</h2>
+          <p class="muted" style="margin:0;line-height:1.65;">
+            La etapa fundadora es para quienes quieren acompañar el desarrollo con un aporte mensual o anual. No es solo donar: es empujar una herramienta comunitaria antes de su lanzamiento final.
+          </p>
 
-    <!-- FOUNDERS -->
-    <section class="section split reveal" id="fundadores">
-      <div class="card panel">
-        <h2 style="margin:0 0 6px;">🤝 Ser socio fundador (ahora)</h2>
-        <p class="muted" style="margin:0;line-height:1.6;">
-          Estás entrando en la etapa donde el apoyo vale el doble: acelera decisiones, financia iteraciones
-          y define el estándar de la comunidad.
-        </p>
+          <ul class="list">
+            <li>
+              <div class="dot"></div>
+              <div>
+                <b>Aporte mensual</b>
+                <span>Ayuda a sostener infraestructura, desarrollo, pruebas, soporte y mejoras continuas.</span>
+              </div>
+            </li>
+            <li>
+              <div class="dot"></div>
+              <div>
+                <b>Descuento por pago anual</b>
+                <span>Beneficio fundador para quienes elijan acompañar el proyecto por más tiempo.</span>
+              </div>
+            </li>
+            <li>
+              <div class="dot"></div>
+              <div>
+                <b>Reconocimiento opcional</b>
+                <span>Podés figurar como fundador/a o mantener tu aporte de forma anónima.</span>
+              </div>
+            </li>
+          </ul>
+        </div>
 
-        <ul class="list">
-          <li>
-            <div class="dot"></div>
-            <div>
-              <b>Acceso anticipado</b>
-              <span>Probás ComVi 0.2 antes del público general y sugerís mejoras.</span>
+        <div class="ctaBox">
+          <div>
+            <h2>❤️ Acompañanos unos kilómetros</h2>
+            <p>
+              Cada aporte ayuda a validar el MVP, mejorar la experiencia mobile, cuidar la seguridad y preparar la futura versión final en Cloudflare Pages + GitHub + Supabase.
+            </p>
+            <div class="price-row">
+              <div class="price">
+                <strong>Mensual fundador</strong>
+                <span>Aporte recurrente para sostener el avance.</span>
+              </div>
+              <div class="price mark">
+                <strong>Anual con descuento</strong>
+                <span>Beneficio especial por acompañar desde el inicio.</span>
+              </div>
             </div>
-          </li>
-          <li>
-            <div class="dot"></div>
-            <div>
-              <b>Comunidad fundadora</b>
-              <span>Grupo privado para feedback, votaciones y prioridades del roadmap.</span>
-            </div>
-          </li>
-          <li>
-            <div class="dot"></div>
-            <div>
-              <b>Reconocimiento</b>
-              <span>Mención (opcional) como fundador/a en el sitio y comunicaciones del proyecto.</span>
-            </div>
-          </li>
-        </ul>
-      </div>
+          </div>
 
-      <div class="ctaBox reveal">
-        <h2>❤️ Aportá y acelerá el lanzamiento</h2>
-        <p>
-          Tu donación sostiene infraestructura, diseño, seguridad y el salto a la versión con login.
-        </p>
+          <div style="display:grid;gap:10px;">
+            <a class="btn primary full" href="https://link.mercadopago.com.ar/donacomvi" target="_blank" rel="noopener">Aportar con MercadoPago</a>
+            <a class="btn ghost full" href="mailto:admcomvi@gmail.com?subject=Quiero%20ser%20fundador%20de%20ComVi&body=Hola%20ComVi%2C%20quiero%20sumarme%20como%20fundador%2Fa.%0A%0AMe%20interesa%3A%20aporte%20mensual%20%2F%20pago%20anual%20con%20descuento.%0ANombre%3A%0ACiudad%3A%0AWhatsApp%3A%0A">Consultar plan fundador</a>
+          </div>
+        </div>
+      </section>
 
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <a class="btn primary" href="https://link.mercadopago.com.ar/donacomvi" target="_blank" rel="noopener">Donar con MercadoPago</a>
-          <a class="btn" href="mailto:admcomvi@gmail.com">📩 Contacto</a>
+      <!-- ROADMAP -->
+      <section class="section reveal" id="camino">
+        <div class="section-title">
+          <h2>Camino de lanzamiento</h2>
+          <p>Primero validamos la experiencia real. Después exportamos, ordenamos el código y desplegamos la versión final con infraestructura propia.</p>
         </div>
 
-        <div class="muted" style="margin-top:10px;">
-          Si querés sumarte como socio fundador: escribinos y te contamos cómo participar en la etapa MVP.
+        <div class="grid3">
+          <div class="feature card">
+            <h3>1. MVP preliminar</h3>
+            <p>Probamos diseño, textos, navegación, publicación de viajes y comercios con usuarios reales.</p>
+          </div>
+          <div class="feature card">
+            <h3>2. Versión final</h3>
+            <p>Cuando esté validado, exportamos a GitHub y desplegamos la primera versión estable en Cloudflare Pages.</p>
+          </div>
+          <div class="feature card">
+            <h3>3. Comunidad activa</h3>
+            <p>Sumamos perfiles, métricas, mejoras de seguridad, guía de comercios y nuevas herramientas viajeras.</p>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </main>
 
     <footer class="footer">
-      <div>ComVi · Comunidad viajera</div>
-      <small>© <span id="year"></span> · Sitio en construcción · Argentina</small>
+      <div><strong>ComVi · Comunidad Viajera</strong></div>
+      <small>
+        © <span id="year"></span> · Proyecto en construcción · Argentina ·
+        <a href="mailto:admcomvi@gmail.com">admcomvi@gmail.com</a>
+      </small>
     </footer>
   </div>
 
